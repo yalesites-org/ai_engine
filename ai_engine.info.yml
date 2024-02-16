@@ -1,0 +1,8 @@
+name: 'AI Engine'
+type: module
+description: 'Transform Drupal websites into AI-powered platforms.'
+package: 'AI Engine'
+version: '1.0'
+core_version_requirement: ^9 || ^10
+dependencies:
+  - drupal:node

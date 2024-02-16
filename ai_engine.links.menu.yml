@@ -1,0 +1,6 @@
+# Add AI Engine settings page to the admin menu.
+ai_engine.admin:
+  route_name: ai_engine.admin
+  parent: system.admin_config
+  title: AI Engine
+  weight: -10

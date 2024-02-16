@@ -1,0 +1,7 @@
+services:
+  ai_engine_database.remove_event_subscriber:
+    class: Drupal\ai_engine_database\EventSubscriber\RemoveSubscriber
+    arguments:
+      $logger: '@logger.channel.default'
+    tags:
+      - { name: event_subscriber }

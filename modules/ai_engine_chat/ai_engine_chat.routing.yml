@@ -1,0 +1,8 @@
+# Manage settings for the chat app.
+ai_engine_chat.settings:
+  path: '/admin/config/ai-engine/chat'
+  defaults:
+    _form: '\Drupal\ai_engine_chat\Form\AiEngineChatSettings'
+    _title: 'AI Engine Chat Settings'
+  requirements:
+    _permission: 'administer ai engine'

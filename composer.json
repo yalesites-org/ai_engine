@@ -1,0 +1,10 @@
+{
+    "name": "yalesites-org/ai_engine",
+    "description": "Transform Drupal websites into AI-powered platforms",
+    "type": "drupal-module",
+    "require": {
+        "php": "^8.0",
+        "drupal/core": "^9.5 || ^10",
+        "drupal/hook_event_dispatcher": "^4.0@RC"
+    }
+}

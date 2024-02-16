@@ -1,0 +1,8 @@
+# Create top-level admin page for AI Engine.
+ai_engine.admin:
+  path: '/admin/config/ai-engine'
+  defaults:
+    _controller: '\Drupal\ai_engine\Controller\AiEngineAdminController::content'
+    _title: 'AI Engine Admin Settings'
+  requirements:
+    _permission: 'administer ai engine'

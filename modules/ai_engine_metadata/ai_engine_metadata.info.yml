@@ -1,0 +1,10 @@
+name: 'AI Engine Metadata'
+type: module
+description: 'Provides specific metatags for use with AI ingestion.'
+core_version_requirement: ^9 || ^10
+package: 'AI Engine'
+version: 1.0
+project: 'ai_engine_metadata'
+dependencies:
+  - node:node
+  - metatag

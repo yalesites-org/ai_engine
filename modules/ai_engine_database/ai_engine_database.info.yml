@@ -1,0 +1,9 @@
+name: 'AI Engine Database Tools'
+type: module
+description: 'Tools for managing documents in a vector database'
+package: 'AI Engine'
+core_version_requirement: ^9.4 || ^10
+dependencies:
+  - ai_engine
+  - core_event_dispatcher
+  - hook_event_dispatcher

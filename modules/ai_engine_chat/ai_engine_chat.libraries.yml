@@ -1,0 +1,9 @@
+# Add and enable the chat widget on all pages.
+chat_widget:
+  css:
+    theme:
+      react/static/assets/index.css: {}
+  js:
+    js/init.js: {}
+    react/static/assets/index.js: { attributes: { type: module } }
+    js/events.js: {}
