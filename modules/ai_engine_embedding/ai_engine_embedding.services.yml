@@ -1,0 +1,7 @@
+services:
+  ai_engine_embedding.entity_update:
+    class: Drupal\ai_engine_embedding\Service\EntityUpdate
+    arguments:
+      - '@http_client_factory'
+      - '@logger.channel.default'
+      - '@metatag.manager'

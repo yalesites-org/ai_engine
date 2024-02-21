@@ -1,0 +1,29 @@
+<?php
+
+/**
+ * @file
+ * Contains ai_engine_embedding.module functions.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_insert().
+ */
+function ai_engine_embedding_entity_insert(EntityInterface $entity) {
+  \Drupal::service('ai_engine_embedding.entity_update')->insert($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function ai_engine_embedding_entity_update(EntityInterface $entity) {
+  \Drupal::service('ai_engine_embedding.entity_update')->update($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function ai_engine_embedding_entity_delete(EntityInterface $entity) {
+  \Drupal::service('ai_engine_embedding.entity_update')->delete($entity);
+}
