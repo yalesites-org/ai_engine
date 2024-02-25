@@ -4,8 +4,10 @@ namespace Drupal\Tests\ai_engine_feed\Unit\Controller;
 
 use Drupal\ai_engine_feed\Controller\ContentFeed;
 use Drupal\ai_engine_feed\Service\Sources;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Tests\UnitTestCase;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * @coversDefaultClass \Drupal\ai_engine_feed\Controller\ContentFeed
@@ -13,6 +15,13 @@ use Drupal\Tests\UnitTestCase;
  * @group ai_engine_feed
  */
 class ContentFeedTest extends UnitTestCase {
+
+  /**
+   * The request stack.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack|\PHPUnit\Framework\MockObject\MockObject
+   */
+  protected $requestStack;
 
   /**
    * The AI Feed Sources service mock.
@@ -35,14 +44,24 @@ class ContentFeedTest extends UnitTestCase {
     parent::setUp();
     // Create a mock for the AI Feed Sources service.
     $this->sourcesMock = $this->createMock(Sources::class);
+    // Create a mock for the RequestStack service.
+    $this->requestStack = $this->createMock(RequestStack::class);
     // Create an instance of the ContentFeed controller with the mock service.
-    $this->contentFeed = new ContentFeed($this->sourcesMock);
+    $this->contentFeed = new ContentFeed($this->sourcesMock, $this->requestStack);
   }
 
   /**
    * Tests the jsonResponse method.
    */
   public function testJsonResponse() {
+    // Create a mock request.
+    $request = new Request([], ['param1' => 'value1', 'param2' => 'value2']);
+
+    // Mock the getCurrentRequest method of RequestStack.
+    $this->requestStack->expects($this->once())
+      ->method('getCurrentRequest')
+      ->willReturn($request);
+
     $sampleContent = [
       'title' => 'Sample Title',
       'body' => 'Sample Body',

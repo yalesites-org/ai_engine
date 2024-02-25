@@ -2,18 +2,20 @@
 
 namespace Drupal\ai_engine_embedding\Service;
 
-use Drupal\Core\Http\ClientFactory;
+use Drupal\ai_engine_feed\Service\Sources;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityPublishedInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Http\ClientFactory;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\metatag\MetatagManager;
-use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Service for updating the vector database as content is updated.
  */
 class EntityUpdate {
+
+  const AZURE_SERVICE_NAME = 'yalehospitalitye2dev';
+  const AZURE_INDEX_NAME = 'askyalehealthfuncapp';
 
   /**
    * The HTTP client factory.
@@ -37,8 +39,17 @@ class EntityUpdate {
   protected $metatagManager;
 
   /**
+   * The AI Feed Sources service.
+   *
+   * @var \Drupal\ai_engine_feed\Service\Sources
+   */
+  protected $sources;
+
+  /**
    * Constructs a new EntityUpdate object.
    *
+   * @param \Drupal\ai_engine_feed\Service\Sources $sources
+   *   The AI Feed Sources service.
    * @param \Drupal\Core\Http\ClientFactory $httpClientFactory
    *   The HTTP client factory.
    * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
@@ -47,10 +58,12 @@ class EntityUpdate {
    *   The metatag manager service.
    */
   public function __construct(
+    Sources $sources,
     ClientFactory $httpClientFactory,
     LoggerChannelInterface $logger,
     MetatagManager $metatagManager
   ) {
+    $this->sources = $sources;
     $this->httpClientFactory = $httpClientFactory;
     $this->logger = $logger;
     $this->metatagManager = $metatagManager;
@@ -88,9 +101,13 @@ class EntityUpdate {
    *   A content entity in Drupal.
    */
   public function update(EntityInterface $entity) {
-    if (!$this->isIndexable($entity)) {
+    if (!$this->isSupportedEntityType($entity)) {
+      return;
+    }
+    elseif (!$this->isIndexable($entity)) {
       $this->removeDocument($entity);
-    } else {
+    }
+    else {
       $this->upsertDocument($entity);
     }
   }
@@ -118,54 +135,97 @@ class EntityUpdate {
    * added or updated in Drupal. This method fires on hook_entity_insert() and
    * hook_entity_update().
    *
-   * @todo Connect this to an external Azure service.
-   *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   A content entity in Drupal.
    */
-  protected function upsertDocument(EntityInterface $entity) {
-    $this->logger->notice(
-      'Upsert node @id in vector database.',
-      ['@id' => $entity->id()]
-    );
-  }
-
-  /**
-   * Remove document from vector database.
-   *
-   * @todo Connect this to an external Azure service.
-   *
-   * @param \Drupal\Core\Entity\EntityInterface $entity
-   *   A content entity in Drupal.
-   */
-  protected function removeDocument(EntityInterface $entity) {
-    $url = 'https://something.azure.com';
-    $data = [];
-
+  public function upsertDocument(EntityInterface $entity) {
+    $route_params = [
+      'entityType' => $entity->getEntityTypeId(),
+      'id' => $entity->id(),
+    ];
+    $data = [
+      "action" => "upsert",
+      "service_name" => self::AZURE_SERVICE_NAME,
+      "index_name" => self::AZURE_INDEX_NAME,
+      "data" => $this->sources->getContentEndpoint($route_params),
+    ];
     $httpClient = $this->httpClientFactory->fromOptions([
       'headers' => [
         'Content-Type' => 'application/json',
       ],
     ]);
-    $response = $httpClient->post($url, ['json' => $data]);
+    $endpoint = 'https://askyaleindexfunc.azurewebsites.net/api/upsert';
 
-    if ($response->getStatusCode() === 200) {
-      $responseData = json_decode($response->getBody()->getContents(), TRUE);
-      $this->logger->notice(
-        'Removed node @id from vector database. Service response: @response',
-        [
-          '@id' => $entity->id(),
-          '@response' => print_r($responseData, TRUE),
-        ]
-      );
+    try {
+      $response = $httpClient->post($endpoint, ['json' => $data]);
+
+      if ($response->getStatusCode() === 200) {
+        $responseData = json_decode($response->getBody()->getContents(), TRUE);
+        $this->logger->notice(
+          'Removed node @id from vector database. Service response: @response',
+          ['@id' => $entity->id(), '@response' => print_r($responseData, TRUE)]
+        );
+      }
+      else {
+        $this->logger->notice(
+          'Unable to remove node @id from vector database. POST failed with status code: @code',
+          ['@id' => $entity->id(), '@code' => $response->getStatusCode()]
+        );
+        return NULL;
+      }
     }
-    else {
-      $this->logger->notice(
-        'Unable to remove node @id from vector database. POST failed with status code: @code',
-        [
-          '@id' => $entity->id(),
-          '@code' => $response->getStatusCode(),
-        ]
+    catch (\Exception $e) {
+      $this->logger->error(
+        'An error occurred while upserting document: @error',
+        ['@error' => $e->getMessage()]
+      );
+      return NULL;
+    }
+  }
+
+  /**
+   * Remove document from vector database.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   A content entity in Drupal.
+   */
+  protected function removeDocument(EntityInterface $entity) {
+    $data = [
+      "action" => "delete-test",
+      "service_name" => self::AZURE_SERVICE_NAME,
+      "index_name" => self::AZURE_INDEX_NAME,
+      "id_list" => [""],
+      "id_filter_list" => [$this->sources->getSearchIndexId($entity)],
+    ];
+    $httpClient = $this->httpClientFactory->fromOptions([
+      'headers' => [
+        'Content-Type' => 'application/json',
+      ],
+    ]);
+    $endpoint = 'https://askyaleindexfunc.azurewebsites.net/api/deletebyid';
+
+    try {
+      $response = $httpClient->post($endpoint, ['json' => $data]);
+
+      if ($response->getStatusCode() === 200) {
+        $responseData = json_decode($response->getBody()->getContents(), TRUE);
+        $this->logger->notice(
+          'Removed node @id from vector database. Service response: @response',
+          ['@id' => $entity->id(), '@response' => print_r($responseData, TRUE)]
+        );
+      }
+      else {
+        $this->logger->notice(
+          'Unable to remove node @id from vector database. POST failed with status code: @code',
+          ['@id' => $entity->id(), '@code' => $response->getStatusCode()]
+        );
+        return NULL;
+      }
+    }
+    catch (\Exception $e) {
+      $this->logger->error(
+        'An error occurred while deleting document: @error',
+        ['@error' => $e->getMessage()]
       );
       return NULL;
     }

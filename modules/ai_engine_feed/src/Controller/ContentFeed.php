@@ -2,10 +2,10 @@
 
 namespace Drupal\ai_engine_feed\Controller;
 
-use Drupal\Core\Controller\ControllerBase;
 use Drupal\ai_engine_feed\Service\Sources;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -38,22 +38,8 @@ class ContentFeed extends ControllerBase {
    *   A JSON response.
    */
   public function jsonResponse() {
-
-    $page = $this->requestStack->getCurrentRequest()->get('page') ?? 1;
-
-    // Tests the query parameter to make sure we have a positive integer.
-    $filter_options = [
-      'options' => [
-        'min_range' => 1,
-      ],
-    ];
-
-    if (filter_var($page, FILTER_VALIDATE_INT, $filter_options) == FALSE) {
-      $page = 1;
-    }
-
-    $content = $this->sources->getContent($page);
-    $response = new JsonResponse($content);
+    $params = $this->requestStack->getCurrentRequest()->query->all();
+    $response = new JsonResponse($this->sources->getContent($params));
     $response->headers->set('Content-Type', 'application/json');
     return $response;
   }
