@@ -15,7 +15,7 @@ use Drupal\metatag\MetatagManager;
 class EntityUpdate {
 
   const AZURE_SERVICE_NAME = 'yalehospitalitye2dev';
-  const AZURE_INDEX_NAME = 'askyalehealthfuncapp';
+  const AZURE_INDEX_NAME = 'askyalehealth';
 
   /**
    * The HTTP client factory.
@@ -191,7 +191,7 @@ class EntityUpdate {
    */
   protected function removeDocument(EntityInterface $entity) {
     $data = [
-      "action" => "delete-test",
+      "action" => "delete",
       "service_name" => self::AZURE_SERVICE_NAME,
       "index_name" => self::AZURE_INDEX_NAME,
       "id_list" => [""],
