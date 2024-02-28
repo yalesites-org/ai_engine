@@ -45,7 +45,7 @@ class AiEngineChatSettings extends ConfigFormBase {
     $form['azure_base_url'] = [
       '#type' => 'url',
       '#title' => $this->t('Azure base URL'),
-      '#description' => $this->t('Ex: https://askyalewebapp.azurewebsites.net'),
+      '#description' => $this->t('Ex: https://askyalehealth.azurewebsites.net'),
       '#default_value' => $config->get('azure_base_url') ?? NULL,
     ];
     $form['prompts'] = [

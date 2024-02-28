@@ -137,6 +137,51 @@ class EntityUpdate {
     $this->removeDocument($entity);
   }
 
+  // @todo: Improve this.
+  public function upsertAllDocuments() {
+    $config = $this->configFactory->get('ai_engine_embedding.settings');
+    $data = [
+      "action" => "upsert",
+      "doctype" => "text",
+      "service_name" => $config->get('azure_search_service_name'),
+      "index_name" => $config->get('azure_search_service_index'),
+      "data" => "",
+      "data_endpoint" => $this->sources->getContentEndpoint(),
+    ];
+    $httpClient = $this->httpClientFactory->fromOptions([
+      'headers' => [
+        'Content-Type' => 'application/json',
+      ],
+    ]);
+    $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
+
+    try {
+      $response = $httpClient->post($endpoint, ['json' => $data]);
+
+      if ($response->getStatusCode() === 200) {
+        $responseData = json_decode($response->getBody()->getContents(), TRUE);
+        $this->logger->notice(
+          'Removed node @id from vector database. Service response: @response',
+          ['@response' => print_r($responseData, TRUE)]
+        );
+      }
+      else {
+        $this->logger->notice(
+          'Unable to remove node @id from vector database. POST failed with status code: @code',
+          ['@code' => $response->getStatusCode()]
+        );
+        return NULL;
+      }
+    }
+    catch (\Exception $e) {
+      $this->logger->error(
+        'An error occurred while upserting document: @error',
+        ['@error' => $e->getMessage()]
+      );
+      return NULL;
+    }
+  }
+
   /**
    * Upsert document in vector database.
    *
@@ -205,7 +250,7 @@ class EntityUpdate {
       "action" => "delete",
       "service_name" => $config->get('azure_search_service_name'),
       "index_name" => $config->get('azure_search_service_index'),
-      "id_list" => [""],
+      "id_list" => [],
       "id_filter_list" => [$this->sources->getSearchIndexId($entity)],
     ];
     $httpClient = $this->httpClientFactory->fromOptions([

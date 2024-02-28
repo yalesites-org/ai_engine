@@ -60,6 +60,11 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
       '#description' => $this->t('Ex: https://askyaleindexfunc.azurewebsites.net'),
       '#default_value' => $config->get('azure_embedding_service_url') ?? NULL,
     ];
+    $form['init_action'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Initialize new site'),
+      '#submit' => ['::customActionInit'],
+    ];
     return parent::buildForm($form, $form_state);
   }
 
@@ -90,6 +95,14 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
       ->set('azure_embedding_service_url', $form_state->getValue('azure_embedding_service_url'))
       ->save();
     parent::submitForm($form, $form_state);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function customActionInit(array &$form, FormStateInterface $form_state) {
+    $service = \Drupal::service('ai_engine_embedding.entity_update');
+    $service->upsertAllDocuments();
   }
 
 }
