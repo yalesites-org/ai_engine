@@ -11,6 +11,13 @@ use Drupal\Core\Form\FormStateInterface;
 class AiEngineChatSettings extends ConfigFormBase {
 
   /**
+   * Config name.
+   *
+   * @var string
+   */
+  const CONFIG_NAME = 'ai_engine_chat.settings';
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -21,42 +28,39 @@ class AiEngineChatSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   protected function getEditableConfigNames() {
-    return ['ai_engine_chat.settings'];
+    return [self::CONFIG_NAME];
   }
 
   /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->config('ai_engine_chat.settings');
-
-    $form['enable'] = array(
+    $config = $this->config(self::CONFIG_NAME);
+    $form['enable'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Enable chat widget'),
       '#default_value' => $config->get('enable') ?? FALSE,
-      '#description' => t('Enable or disable chat service across the site.'),
-    );
-
+      '#description' => $this->t('Enable or disable chat service across the site. Chat can be launched by using the href="#launch-chat" on any link.'),
+    ];
     $form['azure_base_url'] = [
       '#type' => 'url',
       '#title' => $this->t('Azure base URL'),
       '#description' => $this->t('Ex: https://askyalewebapp.azurewebsites.net'),
       '#default_value' => $config->get('azure_base_url') ?? NULL,
     ];
-
-    $form['initial_questions'] = [
-      '#type' => 'multivalue',
-      '#title' => $this->t('Initial question prompts'),
-      '#cardinality' => 4,
-      '#default_value' => ($config->get('initial_questions')) ?? [],
-      '#description' => $this->t('A list of prompts to show when the chat is empty'),
-
-      'question' => [
-        '#type' => 'textfield',
-        '#title' => $this->t('Question'),
-      ],
+    $form['prompts'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Initial Prompts'),
+      '#description' => $this->t('A list of example prompts to show when the chat is initially launched'),
+      '#tree' => TRUE,
     ];
-
+    for ($i = 0; $i < 4; $i++) {
+      $form['prompts'][$i] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('Prompt '),
+        '#default_value' => $config->get('prompts')[$i] ?? [],
+      ];
+    }
     return parent::buildForm($form, $form_state);
   }
 
@@ -64,12 +68,11 @@ class AiEngineChatSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->config('ai_engine_chat.settings')
+    $this->config(self::CONFIG_NAME)
       ->set('enable', $form_state->getValue('enable'))
       ->set('azure_base_url', $form_state->getValue('azure_base_url'))
-      ->set('initial_questions', $form_state->getValue('initial_questions'))
+      ->set('prompts', array_values(array_filter($form_state->getValue('prompts'))))
       ->save();
-
     parent::submitForm($form, $form_state);
   }
 

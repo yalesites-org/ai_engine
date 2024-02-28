@@ -1,0 +1,7 @@
+# Manage settings for the embedding service.
+ai_engine_embedding.settings:
+  title: 'Embedding Settings'
+  description: 'Settings for the AI Engine embedding service'
+  route_name: ai_engine_embedding.settings
+  parent: ai_engine.admin
+  weight: 0

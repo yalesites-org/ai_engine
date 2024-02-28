@@ -3,6 +3,7 @@
 namespace Drupal\ai_engine_embedding\Service;
 
 use Drupal\ai_engine_feed\Service\Sources;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Http\ClientFactory;
@@ -14,8 +15,12 @@ use Drupal\metatag\MetatagManager;
  */
 class EntityUpdate {
 
-  const AZURE_SERVICE_NAME = 'yalehospitalitye2dev';
-  const AZURE_INDEX_NAME = 'askyalehealthfuncapp';
+  /**
+   * The configuration factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
 
   /**
    * The HTTP client factory.
@@ -52,6 +57,8 @@ class EntityUpdate {
    *   The AI Feed Sources service.
    * @param \Drupal\Core\Http\ClientFactory $httpClientFactory
    *   The HTTP client factory.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
+   *   The configuration factory.
    * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
    *   The logger service.
    * @param \Drupal\metatag\MetatagManagerInterface $metatagManager
@@ -60,11 +67,13 @@ class EntityUpdate {
   public function __construct(
     Sources $sources,
     ClientFactory $httpClientFactory,
+    ConfigFactoryInterface $configFactory,
     LoggerChannelInterface $logger,
     MetatagManager $metatagManager
   ) {
     $this->sources = $sources;
     $this->httpClientFactory = $httpClientFactory;
+    $this->configFactory = $configFactory;
     $this->logger = $logger;
     $this->metatagManager = $metatagManager;
   }
@@ -80,7 +89,7 @@ class EntityUpdate {
    *   A content entity in Drupal.
    */
   public function insert(EntityInterface $entity) {
-    if (!$this->isIndexable($entity)) {
+    if (!$this->isServiceEnabled() || !$this->isIndexable($entity)) {
       return;
     }
     $this->upsertDocument($entity);
@@ -101,7 +110,7 @@ class EntityUpdate {
    *   A content entity in Drupal.
    */
   public function update(EntityInterface $entity) {
-    if (!$this->isSupportedEntityType($entity)) {
+    if (!$this->isServiceEnabled() || !$this->isSupportedEntityType($entity)) {
       return;
     }
     elseif (!$this->isIndexable($entity)) {
@@ -122,7 +131,7 @@ class EntityUpdate {
    *   A content entity in Drupal.
    */
   public function delete(EntityInterface $entity) {
-    if (!$this->isSupportedEntityType($entity)) {
+    if (!$this->isServiceEnabled() || !$this->isSupportedEntityType($entity)) {
       return;
     }
     $this->removeDocument($entity);
@@ -139,14 +148,15 @@ class EntityUpdate {
    *   A content entity in Drupal.
    */
   public function upsertDocument(EntityInterface $entity) {
+    $config = $this->configFactory->get('ai_engine_embedding.settings');
     $route_params = [
       'entityType' => $entity->getEntityTypeId(),
       'id' => $entity->id(),
     ];
     $data = [
       "action" => "upsert",
-      "service_name" => self::AZURE_SERVICE_NAME,
-      "index_name" => self::AZURE_INDEX_NAME,
+      "service_name" => $config->get('azure_search_service_name'),
+      "index_name" => $config->get('azure_search_service_index'),
       "data" => $this->sources->getContentEndpoint($route_params),
     ];
     $httpClient = $this->httpClientFactory->fromOptions([
@@ -154,7 +164,7 @@ class EntityUpdate {
         'Content-Type' => 'application/json',
       ],
     ]);
-    $endpoint = 'https://askyaleindexfunc.azurewebsites.net/api/upsert';
+    $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
 
     try {
       $response = $httpClient->post($endpoint, ['json' => $data]);
@@ -190,10 +200,11 @@ class EntityUpdate {
    *   A content entity in Drupal.
    */
   protected function removeDocument(EntityInterface $entity) {
+    $config = $this->configFactory->get('ai_engine_embedding.settings');
     $data = [
-      "action" => "delete-test",
-      "service_name" => self::AZURE_SERVICE_NAME,
-      "index_name" => self::AZURE_INDEX_NAME,
+      "action" => "delete",
+      "service_name" => $config->get('azure_search_service_name'),
+      "index_name" => $config->get('azure_search_service_index'),
       "id_list" => [""],
       "id_filter_list" => [$this->sources->getSearchIndexId($entity)],
     ];
@@ -202,7 +213,7 @@ class EntityUpdate {
         'Content-Type' => 'application/json',
       ],
     ]);
-    $endpoint = 'https://askyaleindexfunc.azurewebsites.net/api/deletebyid';
+    $endpoint = $config->get('azure_embedding_service_url') . '/api/deletebyid';
 
     try {
       $response = $httpClient->post($endpoint, ['json' => $data]);
@@ -229,6 +240,18 @@ class EntityUpdate {
       );
       return NULL;
     }
+  }
+
+  /**
+   * Checks if the embedding service is enabled.
+   *
+   * @return bool
+   *   TRUE if the embedding service is enabled, FALSE otherwise.
+   */
+  protected function isServiceEnabled(): bool {
+    return (bool) $this->configFactory
+      ->get('ai_engine_embedding.settings')
+      ->get('enable');
   }
 
   /**

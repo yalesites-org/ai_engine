@@ -1,0 +1,8 @@
+# Manage settings for the embedding services.
+ai_engine_embedding.settings:
+  path: '/admin/config/ai-engine/embedding'
+  defaults:
+    _form: '\Drupal\ai_engine_embedding\Form\AiEngineEmbeddingSettings'
+    _title: 'Embedding Settings'
+  requirements:
+    _permission: 'administer ai engine'

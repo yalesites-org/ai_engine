@@ -13,16 +13,9 @@ function ai_engine_chat_page_attachments_alter(array &$attachments) {
   // content to all pages and pass configuration via drupalSettings.
   $config = \Drupal::config('ai_engine_chat.settings');
   if ($config->get('enable')) {
-    $configQuestions = $config->get('initial_questions');
-    $questions = [];
-    if ($configQuestions) {
-      foreach ($configQuestions as $question) {
-        $questions[] = $question['question'];
-      }
-    }
     $attachments['#cache']['tags'][] = 'config:ai_engine_chat_settings';
     $attachments['#attached']['drupalSettings']['ai_engine_chat']['azure_base_url'] = $config->get('azure_base_url');
-    $attachments['#attached']['drupalSettings']['ai_engine_chat']['initial_questions'] = json_encode($questions);
+    $attachments['#attached']['drupalSettings']['ai_engine_chat']['initial_questions'] = json_encode($config->get('prompts'));
     $attachments['#attached']['library'][] = 'ai_engine_chat/chat_widget';
   }
 }

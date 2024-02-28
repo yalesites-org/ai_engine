@@ -5,3 +5,4 @@ package: 'AI Engine'
 core_version_requirement: ^9.4 || ^10
 dependencies:
   - ai_engine
+  - ai_engine_feed

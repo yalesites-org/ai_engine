@@ -4,5 +4,6 @@ services:
     arguments:
       - '@ai_engine_feed.sources'
       - '@http_client_factory'
+      - '@config.factory'
       - '@logger.channel.default'
       - '@metatag.manager'
