@@ -14,13 +14,13 @@ export interface GroupedChatHistory {
 const groupByMonth = (entries: Conversation[]) => {
     const groups: GroupedChatHistory[] = [{ month: "Recent", entries: [] }];
     const currentDate = new Date();
-  
+
     entries.forEach((entry) => {
         const date = new Date(entry.date);
         const daysDifference = (currentDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
         const monthYear = date.toLocaleString('default', { month: 'long', year: 'numeric' })
         const existingGroup = groups.find((group) => group.month === monthYear);
-        
+
         if(daysDifference <= 7){
             groups[0].entries.push(entry);
         }else{
@@ -53,7 +53,7 @@ const groupByMonth = (entries: Conversation[]) => {
             return dateB.getTime() - dateA.getTime();
         });
     });
-  
+
     return groups;
 };
 
@@ -62,20 +62,20 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = () => {
     const chatHistory = appStateContext?.state.chatHistory;
 
     React.useEffect(() => {}, [appStateContext?.state.chatHistory]);
-    
+
     let groupedChatHistory;
     if(chatHistory && chatHistory.length > 0){
         groupedChatHistory = groupByMonth(chatHistory);
     }else{
         return <Stack horizontal horizontalAlign='center' verticalAlign='center' style={{ width: "100%", marginTop: 10 }}>
             <StackItem>
-                <Text style={{ alignSelf: 'center' }}>
+                <Text style={{ alignSelf: 'center', fontWeight: '400', fontSize: 14 }}>
                     <span>No chat history.</span>
                 </Text>
             </StackItem>
         </Stack>
     }
-    
+
     return (
         <ChatHistoryListItemGroups groupedChatHistory={groupedChatHistory}/>
     );

@@ -137,8 +137,18 @@ class EntityUpdate {
     $this->removeDocument($entity);
   }
 
-  // @todo: Improve this.
-  public function upsertAllDocuments() {
+  /**
+   * Add all document to the vector databased.
+   *
+   * Used to add all existing documents. This is triggered in the AI Engine
+   * Embedding Settings form. It is a useful tool when adding AskYale to a new
+   * website where we want to index all existing content.
+   *
+   * Note: This method does not delete or modify any existing documents in the
+   * search index. Previously existing document may be updated but there is not
+   * a cleanup routine to find and delete out of date chunks.
+   */
+  public function addAllDocuments() {
     $config = $this->configFactory->get('ai_engine_embedding.settings');
     $data = [
       "action" => "upsert",
@@ -200,6 +210,7 @@ class EntityUpdate {
     ];
     $data = [
       "action" => "upsert",
+      "doctype" => "text",
       "service_name" => $config->get('azure_search_service_name'),
       "index_name" => $config->get('azure_search_service_index'),
       "data" => $this->sources->getContentEndpoint($route_params),
