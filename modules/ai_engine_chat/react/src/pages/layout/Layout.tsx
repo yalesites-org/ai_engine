@@ -1,15 +1,10 @@
 import styles from "./Layout.module.css";
-import Contoso from "../../assets/Contoso.svg";
-import { CopyRegular, ShareRegular } from "@fluentui/react-icons";
 import { Dialog, Stack, TextField, ICommandBarStyles, IButtonStyles } from "@fluentui/react";
 import { useContext, useEffect, useState } from "react";
-import { HistoryButton, ShareButton } from "../../components/common/Button";
 import { AppStateContext } from "../../state/AppProvider";
-import { CosmosDBStatus } from "../../api";
 import Chat from "../../pages/chat/Chat";
 import aiLogo from "../../assets/Logo.svg";
 import Modal from "../../components/Modal/Modal";
-import heroImage from "../../assets/heroImage.png";
 
 const Layout = () => {
     const [isSharePanelOpen, setIsSharePanelOpen] = useState<boolean>(false);

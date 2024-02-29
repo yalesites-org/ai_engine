@@ -1,23 +1,14 @@
 import { useRef, useState, useEffect, useContext, useLayoutEffect } from "react";
 import { CommandBarButton, IconButton, Dialog, DialogType, Stack } from "@fluentui/react";
 import { SquareRegular, ShieldLockRegular, ErrorCircleRegular } from "@fluentui/react-icons";
-
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from "rehype-raw";
 import uuid from 'react-uuid';
-
-import { motion } from "framer-motion"
-
 import Modal from "../../components/Modal/Modal";
-
 import { isEmpty } from "lodash-es";
-import DOMPurify from 'dompurify';
-
 import styles from "./Chat.module.css";
 import loading from "../../assets/loader-chat.gif";
-import Contoso from "../../assets/Contoso.svg";
-import { XSSAllowTags } from "../../constants/xssAllowTags";
 
 import {
     ChatMessage,
@@ -26,7 +17,6 @@ import {
     Citation,
     ToolMessageContent,
     ChatResponse,
-    getUserInfo,
     Conversation,
     historyGenerate,
     historyUpdate,
@@ -50,7 +40,7 @@ const enum messageStatus {
 const Chat = () => {
 
     // Gets initial questions.
-    const questionsFromData = document.getElementById("root")?.getAttribute('data-initial-questions');
+    const questionsFromData = document.getElementById("ai-engine-chat-widget")?.getAttribute('data-initial-questions');
     const initialQuestions = (questionsFromData) ? JSON.parse(questionsFromData!) : [];
 
     const appStateContext = useContext(AppStateContext)
@@ -782,7 +772,7 @@ const Chat = () => {
                                 disabled={disabledButton()}
                                 aria-label="clear chat button"
                             />
-                            <p className={styles.disclaimer}><em>Currently, askYale can assist with hospitality-related information.</em></p>
+                            <p className={styles.disclaimer}><em>Additional instructions go here.</em></p>
                         </div>
                     </div>
                     {/* Citation Panel */}

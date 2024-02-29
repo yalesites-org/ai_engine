@@ -101,7 +101,7 @@ const Modal = ({ show, close, children, header, footer, variant}: ModalProps) =>
         </section>
       </div>
     </>,
-    document.getElementById("root") || document.createElement("div")
+    document.getElementById("ai-engine-chat-widget") || document.createElement("div")
   );
 };
 
