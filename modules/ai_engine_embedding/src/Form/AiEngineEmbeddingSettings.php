@@ -107,7 +107,7 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
    */
   public function actionUpsertAllDocuments(array &$form, FormStateInterface $form_state) {
     $service = \Drupal::service('ai_engine_embedding.entity_update');
-    $service->upsertAllDocuments();
+    $service->addAllDocuments();
   }
 
 }
