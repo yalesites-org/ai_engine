@@ -213,7 +213,8 @@ class EntityUpdate {
       "doctype" => "text",
       "service_name" => $config->get('azure_search_service_name'),
       "index_name" => $config->get('azure_search_service_index'),
-      "data" => $this->sources->getContentEndpoint($route_params),
+      "data" => "",
+      "data_endpoint" => $this->sources->getContentEndpoint($route_params),
     ];
     $httpClient = $this->httpClientFactory->fromOptions([
       'headers' => [
