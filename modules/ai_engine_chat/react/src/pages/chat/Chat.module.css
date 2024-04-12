@@ -445,31 +445,6 @@
     cursor: pointer;
 }
 
-/* Answer Disclaimer */
-.answerDisclaimer {
-    font-style: normal;
-    font-weight: 400;
-    font-size: 0.7rem;
-    line-height: 1;
-
-    display: flex;
-    align-items: center;
-    text-align: center;
-    color: #707070;
-    flex: none;
-    order: 1;
-    flex-grow: 0;
-    width: 100%;
-    max-width: var(--chat-width);
-    margin: 0 auto;
-}
-
-@media screen and (min-width:800px) {
-    .answerDisclaimer {
-        font-size: 1rem;
-    }
-}
-
 .askButton {
     background: transparent;
 }
@@ -556,9 +531,4 @@
 .questionInputSendButtonContainer:focus-visible {
     outline: 2px solid #286DC0;
     outline-offset: 0.25rem;
-}
-
-.disclaimer {
-    margin: 0;
-    font: var(--font-style-body-s);
 }

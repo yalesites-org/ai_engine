@@ -5,41 +5,12 @@
     width: 100%;
 }
 
-.answerDisclaimerText {
-    font-style: italic;
-    font-size: 0.7rem;
-    font-family: 'Mallory', sans-serif;
-  }
-
-  .answerDisclaimerText a {
-    color: #00356B;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 0.25rem;
-  }
-
-  .answerDisclaimerText a:hover {
-    text-decoration: none;
-  }
-
-  .answerDisclaimerContainer {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: .5rem;
-  }
-
-  .answerDisclaimerSeparator {
-    margin: 0 0.5rem;
-    font-style: normal;
-  }
-
-  .urlTextBox {
-    font-style: normal;
-    font-weight: 400;
-    font-size: 1rem;
-    line-height: 1;
-    color: #707070;
-    border: 1px solid #D1D1D1;
-    border-radius: 4px;
-  }
+.urlTextBox {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 1;
+  color: #707070;
+  border: 1px solid #D1D1D1;
+  border-radius: 4px;
+}

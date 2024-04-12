@@ -1,3 +1,5 @@
 enable: false
 azure_base_url: ''
 initial_questions: []
+disclaimer: ''
+footer: ''
