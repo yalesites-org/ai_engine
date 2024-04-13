@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import rehypeRaw from "rehype-raw";
 import uuid from 'react-uuid';
 import Modal from "../../components/Modal/Modal";
+import Disclaimer from "../Disclaimer/Disclaimer";
 import { isEmpty } from "lodash-es";
 import styles from "./Chat.module.css";
 import loading from "../../assets/loader-chat.gif";
@@ -788,7 +789,7 @@ const Chat = () => {
                                 disabled={disabledButton()}
                                 aria-label="clear chat button"
                             />
-                            <p className={styles.disclaimer}><em>Additional instructions go here.</em></p>
+                            <Disclaimer />
                         </div>
                     </div>
                     {/* Citation Panel */}

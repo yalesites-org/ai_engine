@@ -1,8 +1,8 @@
 import styles from "./Layout.module.css";
-import { Dialog, Stack, TextField, ICommandBarStyles, IButtonStyles } from "@fluentui/react";
 import { useContext, useEffect, useState } from "react";
 import { AppStateContext } from "../../state/AppProvider";
 import Chat from "../../pages/chat/Chat";
+import Footer from "../Footer/Footer";
 import aiLogo from "../../assets/Logo.svg";
 import Modal from "../../components/Modal/Modal";
 
@@ -53,21 +53,6 @@ const Layout = () => {
 
     useEffect(() => { }, [appStateContext?.state.isCosmosDBAvailable.status]);
 
-    // Set const for modal footer content
-    const LandingFooter = () => {
-        return (
-          <Stack.Item className={styles.answerDisclaimerContainer}>
-            <div className={styles.answerDisclaimer}>
-              <span className={styles.answerDisclaimerText}>Content is AI-generated and may contain inaccuracies. User discretion advised.</span>
-              <span className={styles.answerDisclaimerSeparator}>|</span>
-              <span className={styles.answerDisclaimerText}><a href="/#additional-insights" title="FAQs" onClick={handleCloseModal}>FAQs</a></span>
-              <span className={styles.answerDisclaimerSeparator}>|</span>
-              <span className={styles.answerDisclaimerText}><a href="/share-your-feedback" title="Share Feedback">Share feedback</a></span>
-            </div>
-          </Stack.Item>
-        );
-    }
-
     const LandingHeader = () => {
         return (
             <img src={aiLogo} className={styles.modalHeaderTitle} alt="AskYale" />
@@ -92,7 +77,7 @@ const Layout = () => {
         <Modal
           show={isModalOpen}
           header={<LandingHeader />}
-          footer={<LandingFooter />}
+          footer={<Footer />}
           close={handleCloseModal}
           variant={""}
         >

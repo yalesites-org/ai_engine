@@ -61,6 +61,20 @@ class AiEngineChatSettings extends ConfigFormBase {
         '#default_value' => $config->get('prompts')[$i] ?? [],
       ];
     }
+    $form['disclaimer'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Disclaimer'),
+      '#description' => $this->t('Appears below the chat form. No markup allowed, max of about 100 characters'),
+      '#default_value' => $config->get('disclaimer') ?? NULL,
+      '#rows' => 2,
+    ];
+    $form['footer'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Footer'),
+      '#description' => $this->t('Displays at the bottom of the modal window. May include links and basic HTML.'),
+      '#default_value' => $config->get('footer') ?? NULL,
+      '#rows' => 2,
+    ];
     return parent::buildForm($form, $form_state);
   }
 
@@ -72,6 +86,8 @@ class AiEngineChatSettings extends ConfigFormBase {
       ->set('enable', $form_state->getValue('enable'))
       ->set('azure_base_url', $form_state->getValue('azure_base_url'))
       ->set('prompts', array_values(array_filter($form_state->getValue('prompts'))))
+      ->set('disclaimer', $form_state->getValue('disclaimer'))
+      ->set('footer', $form_state->getValue('footer'))
       ->save();
     parent::submitForm($form, $form_state);
   }

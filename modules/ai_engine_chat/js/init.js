@@ -16,5 +16,13 @@
     "data-initial-questions",
     drupalSettings.ai_engine_chat.initial_questions || ""
   );
+  chatWidget.setAttribute(
+    "disclaimer",
+    drupalSettings.ai_engine_chat.disclaimer || ""
+  );
+  chatWidget.setAttribute(
+    "footer",
+    drupalSettings.ai_engine_chat.footer || ""
+  );
   document.body.appendChild(chatWidget);
 })();
