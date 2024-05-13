@@ -36,18 +36,6 @@ class AiEngineChatSettings extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config(self::CONFIG_NAME);
-    $form['enable'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Enable chat widget'),
-      '#default_value' => $config->get('enable') ?? FALSE,
-      '#description' => $this->t('Enable or disable chat service across the site. Chat can be launched by using the href="#launch-chat" on any link.'),
-    ];
-    $form['azure_base_url'] = [
-      '#type' => 'url',
-      '#title' => $this->t('Azure base URL'),
-      '#description' => $this->t('Ex: https://askyalehealth.azurewebsites.net'),
-      '#default_value' => $config->get('azure_base_url') ?? NULL,
-    ];
     $form['prompts'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Initial Prompts'),
@@ -83,8 +71,6 @@ class AiEngineChatSettings extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->config(self::CONFIG_NAME)
-      ->set('enable', $form_state->getValue('enable'))
-      ->set('azure_base_url', $form_state->getValue('azure_base_url'))
       ->set('prompts', array_values(array_filter($form_state->getValue('prompts'))))
       ->set('disclaimer', $form_state->getValue('disclaimer'))
       ->set('footer', $form_state->getValue('footer'))

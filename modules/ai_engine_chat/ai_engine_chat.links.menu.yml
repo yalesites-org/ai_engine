@@ -1,7 +1,14 @@
-# Manage settings for the chat app.
+# Admin settings for the chat app.
+ai_engine_chat.admin:
+  title: 'Chat Admin'
+  description: 'Admin settings for the AI Engine chat service'
+  route_name: ai_engine_chat.admin
+  parent: ai_engine.admin
+  weight: 0
+# Manage content settings for the chat app.
 ai_engine_chat.settings:
   title: 'Chat Settings'
   description: 'Settings for the AI Engine chat service'
   route_name: ai_engine_chat.settings
   parent: ai_engine.admin
-  weight: 0
+  weight: 1

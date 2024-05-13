@@ -1,4 +1,7 @@
 # Create permission for managin AI Engine settings.
 administer ai engine:
   title: 'Administer AI Engine'
-  description: 'Set and change AI Engine Settings.'
+  description: 'Enable services and change sensative settings.'
+manage ai engine settings:
+  title: 'Manage AI Engine Settings'
+  description: 'Set and update AI Engine content and settings.'

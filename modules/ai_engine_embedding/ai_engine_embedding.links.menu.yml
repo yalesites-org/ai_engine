@@ -4,4 +4,4 @@ ai_engine_embedding.settings:
   description: 'Settings for the AI Engine embedding service'
   route_name: ai_engine_embedding.settings
   parent: ai_engine.admin
-  weight: 0
+  weight: 10
