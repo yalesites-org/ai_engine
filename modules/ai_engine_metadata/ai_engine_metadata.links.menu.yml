@@ -1,0 +1,7 @@
+# Admin settings for the metadata service.
+ai_engine_metadata.admin:
+  title: 'Metadata Admin'
+  description: 'Admin settings for the AI Metadata service'
+  route_name: ai_engine_metadata.admin
+  parent: ai_engine.admin
+  weight: 20
