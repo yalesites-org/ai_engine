@@ -1,5 +1,7 @@
 <?php
 
+use Drupal\Core\Form\FormStateInterface;
+
 /**
  * @file
  * Contains ai_engine_metadata.module functions.
@@ -8,18 +10,11 @@
 /**
  * Implements hook_field_widget_single_element_WIDGET_TYPE_form_alter().
  */
-// function ai_engine_metadata_field_widget_complete_form_alter(&$field_widget_complete_form, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
-
-function ai_engine_metadata_field_widget_complete_form_alter(&$field_widget_complete_form, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
-  $field_definition = $context['items']->getFieldDefinition();
-  ksm($field_widget_complete_form);
-  ksm($field_definition->getType());
-  if($field_definition->getType() == 'metatag') {
-    // If the chat widget is enbabled, then attach the React app and related
-    // content to all pages and pass configuration via drupalSettings.
-    $config = \Drupal::config('ai_engine_metadata.settings');
-    if (!$config->get('enable')) {
-      unset($field_widget_complete_form['ai_engine']);
-    }
+function ai_engine_metadata_field_widget_single_element_metatag_firehose_form_alter(&$field_widget_complete_form, FormStateInterface $form_state, $context) {
+  // Only display the AI metatags form if it enabled in the admin interface.
+  // See: admin/config/ai-engine/metadata-admin.
+  $config = \Drupal::config('ai_engine_metadata.settings');
+  if (!$config->get('enable')) {
+    unset($field_widget_complete_form['ai_engine']);
   }
 }
