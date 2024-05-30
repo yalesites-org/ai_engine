@@ -5,6 +5,7 @@ namespace Drupal\ai_engine_feed\Service;
 use Drupal\ai_engine_feed\ApiLinkBuilderTrait;
 use Drupal\ai_engine_metadata\AiMetadataManager;
 use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Render\RendererInterface;
@@ -35,6 +36,12 @@ class Sources {
    * @var \Drupal\ai_metadata\AiMetadataManager
    */
   protected $aiMetadataManager;
+
+  /**
+   * The entity field manager service.
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  protected $entityFieldManager;
 
   /**
    * The entity type manager service.
@@ -84,12 +91,14 @@ class Sources {
     RendererInterface $renderer,
     RequestStack $requestStack,
     AiMetadataManager $ai_metadata_manager,
+    EntityFieldManagerInterface $entityFieldManager,
   ) {
     $this->entityTypeManager = $entityTypeManager;
     $this->logger = $logger;
     $this->renderer = $renderer;
     $this->requestStack = $requestStack;
     $this->aiMetadataManager = $ai_metadata_manager;
+    $this->entityFieldManager = $entityFieldManager;
   }
 
   /**
@@ -177,13 +186,29 @@ class Sources {
       $query->condition('nid', $params['id']);
     }
 
-    // Don't include nodes that are marked to be excluded in the AI metadata.
-    $andCondition = $query->orConditionGroup()
-      ->condition('field_metatags', '%ai_disable_indexing%', 'NOT LIKE')
-      ->condition('field_metatags', NULL, 'IS NULL');
-    $query->condition($andCondition);
+    if ($this->doesFieldMetatagsExist('field_metatags')) {
+      // Don't include nodes that are marked to be excluded in the AI metadata.
+      $andCondition = $query->orConditionGroup()
+                            ->condition('field_metatags', '%ai_disable_indexing%', 'NOT LIKE')
+                            ->condition('field_metatags', NULL, 'IS NULL');
+      $query->condition($andCondition);
+    }
 
     return $query->execute();
+  }
+
+  /**
+   * Determines if field_metatags exists.
+   *
+   * @param string $fieldToSearch
+   *    The field to search for.
+   * @return bool
+   *    Whether the field exists or not.
+   */
+  protected function doesFieldMetatagsExist($fieldToSearch) {
+    $definitions = $this->entityFieldManager->getFieldDefinitions('node', 'node');
+
+    return array_key_exists($fieldToSearch, $definitions);
   }
 
   /**
