@@ -248,9 +248,15 @@ class Sources {
    *   The rendered HTML.
    */
   protected function processContentBody(EntityInterface $entity) {
-    $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
-    $renderArray = $view_builder->view($entity, 'default');
-    return $this->renderer->render($renderArray);
+    try {
+      $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
+      $renderArray = $view_builder->view($entity, 'default');
+      $returnValue = $this->renderer->render($renderArray);
+    } catch(\TypeError $e) {
+      $returnValue = '';
+    }
+
+    return $returnValue;
   }
 
   /**
