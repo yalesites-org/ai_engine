@@ -82,7 +82,7 @@ trait ApiLinkBuilderTrait {
       return "";
     }
     elseif ($totalPages > 1 && $currentPage < $totalPages) {
-      $params['page']++;
+      $params['page'] = $params['page'] ? $params['page']++ : 2;
     }
     return $this->getContentEndpoint($params);
   }
