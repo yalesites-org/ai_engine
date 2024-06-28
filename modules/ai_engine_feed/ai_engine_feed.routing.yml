@@ -6,3 +6,10 @@ ai_engine_feed.content:
     _title: 'Content Feed'
   requirements:
     _permission: 'access content'
+ai_engine_feed.settings:
+  path: '/admin/config/ai-engine/feed'
+  defaults:
+    _form: '\Drupal\ai_engine_feed\Form\AiEngineFeedSettings'
+    _title: 'Feed Settings'
+  requirements:
+    _permission: 'administer ai engine'

@@ -1,0 +1,7 @@
+# Manage settings for the feed module
+ai_engine_feed.settings:
+  title: 'Feed Settings'
+  description: 'Settings for the AI Engine feed module'
+  route_name: ai_engine_feed.settings
+  parent: ai_engine.admin
+  weight: 0

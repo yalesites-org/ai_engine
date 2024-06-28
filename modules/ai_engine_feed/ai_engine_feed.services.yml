@@ -2,4 +2,4 @@ services:
   # Service to query and prepare content for the feed.
   ai_engine_feed.sources:
     class: Drupal\ai_engine_feed\Service\Sources
-    arguments: ['@entity_type.manager', '@logger.channel.default', '@renderer', '@request_stack', '@ai_engine_metadata.manager', '@entity_field.manager']
+    arguments: ['@entity_type.manager', '@logger.channel.default', '@renderer', '@request_stack', '@ai_engine_metadata.manager', '@entity_field.manager', '@config.factory']

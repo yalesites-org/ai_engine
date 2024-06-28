@@ -4,6 +4,7 @@ namespace Drupal\ai_engine_feed\Service;
 
 use Drupal\ai_engine_feed\ApiLinkBuilderTrait;
 use Drupal\ai_engine_metadata\AiMetadataManager;
+use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -31,6 +32,21 @@ class Sources {
   const RECORDS_PER_PAGE = 50;
 
   /**
+   * Config name.
+   *
+   * @var string
+   */
+  const CONFIG_NAME = 'ai_engine_feed.settings';
+
+  /**
+   * Configuration for feeds.
+   *
+   * @var \Drupal\Core\Config\ConfigFactory
+   *  The configuration factory.
+   */
+  protected $configFactory;
+
+  /**
    * AI Metadata Manager.
    *
    * @var \Drupal\ai_metadata\AiMetadataManager
@@ -39,6 +55,7 @@ class Sources {
 
   /**
    * The entity field manager service.
+   *
    * @var \Drupal\Core\Entity\EntityFieldManagerInterface
    */
   protected $entityFieldManager;
@@ -92,6 +109,7 @@ class Sources {
     RequestStack $requestStack,
     AiMetadataManager $ai_metadata_manager,
     EntityFieldManagerInterface $entityFieldManager,
+    ConfigFactory $configFactory,
   ) {
     $this->entityTypeManager = $entityTypeManager;
     $this->logger = $logger;
@@ -99,6 +117,7 @@ class Sources {
     $this->requestStack = $requestStack;
     $this->aiMetadataManager = $ai_metadata_manager;
     $this->entityFieldManager = $entityFieldManager;
+    $this->configFactory = $configFactory;
   }
 
   /**
@@ -186,11 +205,12 @@ class Sources {
       $query->condition('nid', $params['id']);
     }
 
-    if ($this->doesFieldMetatagsExist('field_metatags')) {
-      // Don't include nodes that are marked to be excluded in the AI metadata.
+    // Don't include nodes that are marked to be excluded in the AI metadata.
+    $metatags_field = $this->configFactory->get(self::CONFIG_NAME)->get('metatags_field');
+    if (!empty($metatags_field)) {
       $andCondition = $query->orConditionGroup()
-                            ->condition('field_metatags', '%ai_disable_indexing%', 'NOT LIKE')
-                            ->condition('field_metatags', NULL, 'IS NULL');
+        ->condition($metatags_field, '%ai_disable_indexing%', 'NOT LIKE')
+        ->condition($metatags_field, NULL, 'IS NULL');
       $query->condition($andCondition);
     }
 
@@ -201,9 +221,10 @@ class Sources {
    * Determines if field_metatags exists.
    *
    * @param string $fieldToSearch
-   *    The field to search for.
+   *   The field to search for.
+   *
    * @return bool
-   *    Whether the field exists or not.
+   *   Whether the field exists or not.
    */
   protected function doesFieldMetatagsExist($fieldToSearch) {
     $definitions = $this->entityFieldManager->getFieldDefinitions('node', 'node');
