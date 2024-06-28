@@ -1,0 +1,8 @@
+# Admin settings for the metadata features.
+ai_engine_metadata.admin:
+  path: '/admin/config/ai-engine/metadata-admin'
+  defaults:
+    _form: '\Drupal\ai_engine_metadata\Form\AiEngineMetadataAdmin'
+    _title: 'Metadata Admin'
+  requirements:
+    _permission: 'administer ai engine'
