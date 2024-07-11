@@ -270,7 +270,7 @@ class Sources {
    */
   protected function processContentBody(EntityInterface $entity) {
     try {
-      $this->setRequestTitleToNodeTitle();
+      $this->setRequestTitleToNodeId($entity);
       $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
       $renderArray = $view_builder->view($entity, 'default');
       $returnValue = $this->renderer->render($renderArray);
@@ -334,18 +334,24 @@ class Sources {
   /**
    * Set the request title to the node title.
    *
-   * @return bool
-   *  TRUE if the request title was set.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to get the title from.
    */
-  protected function setRequestTitleToNodeTitle(): bool {
+  protected function setRequestTitleToNodeTitle(EntityInterface $entity): bool {
     $request = $this->requestStack->getCurrentRequest();
-    $node = $request->attributes->get('node');
-    if ($node) {
-      $request->attributes->set('title', $node->getTitle());
-      return true;
+    $route_match = \Drupal::routeMatch();
+    $route = $route_match->getRouteObject();
+    if ($route) {
+      $route->setDefault('_title', $entity->getTitle());
     }
+  }
 
-    return false;
+  protected function setRequestTitleToNodeId(EntityInterface $entity): void {
+      $request = $this->requestStack->getCurrentRequest();
+      $route = $this->routeMatch->getRouteObject();
+      if ($route) {
+        $route->setDefault('_title', $entity->id());
+      }
   }
 
 }
