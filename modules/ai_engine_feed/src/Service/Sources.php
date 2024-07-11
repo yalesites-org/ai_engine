@@ -270,6 +270,7 @@ class Sources {
    */
   protected function processContentBody(EntityInterface $entity) {
     try {
+      $this->setRequestTitleToNodeTitle();
       $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
       $renderArray = $view_builder->view($entity, 'default');
       $returnValue = $this->renderer->render($renderArray);
@@ -328,6 +329,23 @@ class Sources {
    */
   protected function getUrl(EntityInterface $entity): string {
     return $entity->toUrl('canonical', ['absolute' => TRUE])->toString();
+  }
+
+  /**
+   * Set the request title to the node title.
+   *
+   * @return bool
+   *  TRUE if the request title was set.
+   */
+  protected function setRequestTitleToNodeTitle(): boolean {
+    $request = $this->requestStack->getCurrentRequest();
+    $node = $request->attributes->get('node');
+    if ($node) {
+      $request->attributes->set('title', $node->getTitle());
+      return true;
+    }
+
+    return false;
   }
 
 }
