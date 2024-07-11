@@ -337,7 +337,7 @@ class Sources {
    * @return bool
    *  TRUE if the request title was set.
    */
-  protected function setRequestTitleToNodeTitle(): boolean {
+  protected function setRequestTitleToNodeTitle(): bool {
     $request = $this->requestStack->getCurrentRequest();
     $node = $request->attributes->get('node');
     if ($node) {
