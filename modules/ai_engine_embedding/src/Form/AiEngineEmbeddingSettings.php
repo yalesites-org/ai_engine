@@ -60,6 +60,12 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
       '#description' => $this->t('Ex: https://askyaleindexfunc.azurewebsites.net'),
       '#default_value' => $config->get('azure_embedding_service_url') ?? NULL,
     ];
+    $form['azure_chunk_size'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Chunk Size'),
+      '#description' => $this->t('The chunk size to split each document into'),
+      '#default_value' => $config->get('azure_chunk_size') ?? 3000,
+    ];
     $form['actions'] = [
       '#type' => 'details',
       '#title' => $this->t('Embedding Operations'),
@@ -98,6 +104,7 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
       ->set('azure_search_service_name', $form_state->getValue('azure_search_service_name'))
       ->set('azure_search_service_index', $form_state->getValue('azure_search_service_index'))
       ->set('azure_embedding_service_url', $form_state->getValue('azure_embedding_service_url'))
+      ->set('azure_chunk_size', $form_state->getValue('azure_chunk_size'))
       ->save();
     parent::submitForm($form, $form_state);
   }
