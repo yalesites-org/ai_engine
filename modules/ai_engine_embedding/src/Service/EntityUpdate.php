@@ -70,7 +70,7 @@ class EntityUpdate {
     ClientFactory $httpClientFactory,
     ConfigFactoryInterface $configFactory,
     LoggerChannelInterface $logger,
-    MetatagManager $metatagManager
+    MetatagManager $metatagManager,
   ) {
     $this->sources = $sources;
     $this->httpClientFactory = $httpClientFactory;
@@ -151,16 +151,7 @@ class EntityUpdate {
    */
   public function addAllDocuments() {
     $config = $this->configFactory->get('ai_engine_embedding.settings');
-    $chunk_size = $config->get('azure_chunk_size') || CHUNK_SIZE_DEFAULT;
-    $data = [
-      "action" => "upsert",
-      "doctype" => "text",
-      "service_name" => $config->get('azure_search_service_name'),
-      "index_name" => $config->get('azure_search_service_index'),
-      "data" => "",
-      "data_endpoint" => $this->sources->getContentEndpoint(),
-      "chunk_size" => $chunk_size,
-    ];
+    $data = $this->getData("upsert", $config, [], "");
     $httpClient = $this->httpClientFactory->fromOptions([
       'headers' => [
         'Content-Type' => 'application/json',
@@ -212,15 +203,7 @@ class EntityUpdate {
       'entityType' => $entity->getEntityTypeId(),
       'id' => $entity->id(),
     ];
-    $data = [
-      "action" => "upsert",
-      "doctype" => "text",
-      "service_name" => $config->get('azure_search_service_name'),
-      "index_name" => $config->get('azure_search_service_index'),
-      "data" => "",
-      "data_endpoint" => $this->sources->getContentEndpoint($route_params),
-      "chunk_size" => $chunk_size,
-    ];
+    $data = $this->getData("upsert", $config, $route_params, "");
     $httpClient = $this->httpClientFactory->fromOptions([
       'headers' => [
         'Content-Type' => 'application/json',
@@ -386,6 +369,49 @@ class EntityUpdate {
       return FALSE;
     }
     return TRUE;
+  }
+
+  /**
+   * Get the data to send to the AI Embedding service.
+   *
+   * @param string $action
+   *   The action to perform on the data.
+   * @param object $config
+   *   The configuration object.
+   * @param array $route_params
+   *   An array of route parameters.
+   * @param string $data
+   *   The data to send to the AI Embedding service.
+   *
+   * @return array
+   *   An array of data to send to the AI Embedding service.
+   */
+  protected function getData($action = 'upsert', $config, $route_params = [], $data = ""): array {
+    $allowed_actions = ['upsert'];
+    if (!$config) {
+      throw new \Exception('Missing configuration object.');
+    }
+
+    if (!in_array($action, $allowed_actions)) {
+      throw new \Exception('Invalid action provided.');
+    }
+
+    $chunk_size = $config->get('azure_chunk_size') ?? CHUNK_SIZE_DEFAULT;
+
+    $data_endpoint = "";
+    if ($data == "") {
+      $data_endpoint = $this->sources->getContentEndpoint($route_params);
+    }
+
+    return [
+      "action" => $action,
+      "doctype" => "text",
+      "service_name" => $config->get('azure_search_service_name'),
+      "index_name" => $config->get('azure_search_service_index'),
+      "data" => $data,
+      "data_endpoint" => $data_endpoint,
+      "chunk_size" => $chunk_size,
+    ];
   }
 
 }
