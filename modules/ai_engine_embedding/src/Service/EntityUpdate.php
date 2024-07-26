@@ -14,6 +14,7 @@ use Drupal\metatag\MetatagManager;
  * Service for updating the vector database as content is updated.
  */
 class EntityUpdate {
+  const CHUNK_SIZE_DEFAULT = 3000;
 
   /**
    * The configuration factory.
@@ -150,6 +151,7 @@ class EntityUpdate {
    */
   public function addAllDocuments() {
     $config = $this->configFactory->get('ai_engine_embedding.settings');
+    $chunk_size = $config->get('azure_chunk_size') || CHUNK_SIZE_DEFAULT;
     $data = [
       "action" => "upsert",
       "doctype" => "text",
@@ -157,6 +159,7 @@ class EntityUpdate {
       "index_name" => $config->get('azure_search_service_index'),
       "data" => "",
       "data_endpoint" => $this->sources->getContentEndpoint(),
+      "chunk_size" => $chunk_size,
     ];
     $httpClient = $this->httpClientFactory->fromOptions([
       'headers' => [
@@ -204,6 +207,7 @@ class EntityUpdate {
    */
   public function upsertDocument(EntityInterface $entity) {
     $config = $this->configFactory->get('ai_engine_embedding.settings');
+    $chunk_size = $config->get('azure_chunk_size') || CHUNK_SIZE_DEFAULT;
     $route_params = [
       'entityType' => $entity->getEntityTypeId(),
       'id' => $entity->id(),
@@ -215,6 +219,7 @@ class EntityUpdate {
       "index_name" => $config->get('azure_search_service_index'),
       "data" => "",
       "data_endpoint" => $this->sources->getContentEndpoint($route_params),
+      "chunk_size" => $chunk_size,
     ];
     $httpClient = $this->httpClientFactory->fromOptions([
       'headers' => [
