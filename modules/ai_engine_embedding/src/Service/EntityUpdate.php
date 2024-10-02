@@ -2,12 +2,12 @@
 
 namespace Drupal\ai_engine_embedding\Service;
 
-use Drupal\ai_engine_feed\Service\Sources;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Http\ClientFactory;
 use Drupal\Core\Logger\LoggerChannelInterface;
+use Drupal\ai_engine_feed\Service\Sources;
 use Drupal\metatag\MetatagManager;
 
 /**
