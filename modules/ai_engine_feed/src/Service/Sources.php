@@ -136,7 +136,8 @@ class Sources {
   public function getContent(array $params = []): array {
     // Query and format a list of entity data.
     $ids = $this->queryEntities($params);
-    $entities = $this->entityTypeManager->getStorage('node')->loadMultiple($ids);
+    $entityType = $params['entityType'] ?? 'node';
+    $entities = $this->entityTypeManager->getStorage($entityType)->loadMultiple($ids);
     $entityData = [];
     foreach ($entities as $entity) {
       /** @var \Drupal\node\Entity\Node $entity */
