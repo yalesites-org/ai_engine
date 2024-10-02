@@ -37,4 +37,19 @@ class MediaPlugin extends ContentFeedBase {
     ];
   }
 
+  /**
+   *
+   */
+  protected function getFileDataField($entity) {
+    $possibilities = ['field_media_file', 'field_media_image'];
+
+    foreach ($possibilities as $field) {
+      if ($entity->hasField($field)) {
+        return $entity->get($field);
+      }
+    }
+
+    return NULL;
+  }
+
 }
