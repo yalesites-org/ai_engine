@@ -217,9 +217,12 @@ class Sources {
    *   An array of node IDs for content entities filtered by query parameters.
    */
   protected function queryEntities(array $params, bool $pager = TRUE): array {
+    $entityType = $params['entityType'] ?? 'node';
+
+    $allowedEntities = ['node', 'media'];
     // Query all publically available nodes.
     $query = $this->entityTypeManager
-      ->getStorage('node')
+      ->getStorage($entityType)
       ->getQuery()
       ->condition('status', NodeInterface::PUBLISHED)
       ->accessCheck(TRUE);
