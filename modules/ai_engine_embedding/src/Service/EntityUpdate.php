@@ -156,7 +156,7 @@ class EntityUpdate {
 
     // Loop through entityTypesToSend and send.
     foreach ($entityTypesToSend as $entityType) {
-      $data = $this->getData("upsert", $config, ['entity_type' => $entityType], "", $docTypes[$entityType]);
+      $data = $this->getData("upsert", $config, ['entityType' => $entityType], "", $docTypes[$entityType]);
       $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
       // Send node post.
       $this->sendPost($endpoint, $data);
