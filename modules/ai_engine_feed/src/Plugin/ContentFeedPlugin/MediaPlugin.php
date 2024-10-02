@@ -17,9 +17,21 @@ class MediaPlugin extends ContentFeedBase {
    * {@inheritdoc}
    */
   public function generateFeed($source, $entity): array | NULL {
-    $fileData = $entity->get('field_media_file')->first()->getValue();
-    $fileTitle = $fileData['description'];
-    $file = $entity->get('field_media_file')->entity;
+    $titleFields = ['description', 'title', 'alt'];
+    $fileDataField = $this->getFileDataField($entity);
+    if (!$fileDataField) {
+      throw new \Exception('No file data field found.');
+    }
+
+    $fileData = $fileDataField->first()->getValue();
+    $fileTitle = '';
+    foreach ($titleFields as $field) {
+      if (isset($fileData[$field])) {
+        $fileTitle = $fileData[$field];
+        break;
+      }
+    }
+    $file = $fileDataField->entity;
     $fileUrl = $file->createFileUrl(FALSE);
     return [
       'id' => $source->getSearchIndexId($entity),
