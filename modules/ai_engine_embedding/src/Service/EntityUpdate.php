@@ -330,7 +330,9 @@ class EntityUpdate {
    *   TRUE if the entity should be embedded, FALSE otherwise.
    */
   protected function isSupportedEntityType(EntityInterface $entity) {
-    return $entity->getEntityTypeId() === 'node';
+    $allowed_entities = ['node', 'media'];
+
+    return in_array($entity->getEntityTypeId(), $allowed_entities);
   }
 
   /**
