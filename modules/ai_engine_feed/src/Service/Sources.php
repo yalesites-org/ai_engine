@@ -141,20 +141,7 @@ class Sources {
     $entityData = [];
     foreach ($entities as $entity) {
       /** @var \Drupal\node\Entity\Node $entity */
-      $entityData[] = [
-        'id' => $this->getSearchIndexId($entity),
-        'source' => 'drupal',
-        'documentType' => $this->getDocumentType($entity),
-        'documentId' => $entity->id(),
-        'documentUrl' => $this->getUrl($entity),
-        'documentTitle' => $entity->getTitle(),
-        'documentContent' => $this->processContentBody($entity),
-        'metaTags' => $this->aiMetadataManager->getAiMetadata($entity)['ai_tags'],
-        'metaDescription' => $this->aiMetadataManager->getAiMetadata($entity)['ai_description'],
-        'dateCreated' => $this->formatTimestamp($entity->getCreatedTime()),
-        'dateModified' => $this->formatTimestamp($entity->getChangedTime()),
-        'dateProcessed' => $this->formatTimestamp(time()),
-      ];
+      $entityData[] = $this->generateEntityData($entity, $entityType);
     }
 
     $totalRecords = $this->countTotalRecords($params);
@@ -173,6 +160,49 @@ class Sources {
         'total_pages' => $totalPages,
       ],
     ];
+  }
+
+  /**
+   *
+   */
+  public function generateEntityData($entity, $entityType) {
+    switch ($entityType) {
+      case 'node':
+        return [
+          'id' => $this->getSearchIndexId($entity),
+          'source' => 'drupal',
+          'documentType' => $this->getDocumentType($entity),
+          'documentId' => $entity->id(),
+          'documentUrl' => $this->getUrl($entity),
+          'documentTitle' => $entity->getTitle(),
+          'documentContent' => $this->processContentBody($entity),
+          'metaTags' => $this->aiMetadataManager->getAiMetadata($entity)['ai_tags'],
+          'metaDescription' => $this->aiMetadataManager->getAiMetadata($entity)['ai_description'],
+          'dateCreated' => $this->formatTimestamp($entity->getCreatedTime()),
+          'dateModified' => $this->formatTimestamp($entity->getChangedTime()),
+          'dateProcessed' => $this->formatTimestamp(time()),
+        ];
+
+      case 'media':
+        $fileData = $entity->get('field_media_file')->first()->getValue();
+        $fileTitle = $fileData['description'];
+        $file = $entity->get('field_media_file')->entity;
+        $fileUrl = $file->createFileUrl(FALSE);
+        return [
+          'id' => $this->getSearchIndexId($entity),
+          'source' => 'drupal',
+          'documentType' => $this->getDocumentType($entity),
+          'documentId' => $entity->id(),
+          'documentUrl' => $this->getUrl($entity),
+          'documentTitle' => $fileTitle,
+          'documentContent' => $fileUrl,
+          'metaTags' => $this->aiMetadataManager->getAiMetadata($entity)['ai_tags'],
+          'metaDescription' => $this->aiMetadataManager->getAiMetadata($entity)['ai_description'],
+          'dateCreated' => $this->formatTimestamp($entity->getCreatedTime()),
+          'dateModified' => $this->formatTimestamp($entity->getChangedTime()),
+          'dateProcessed' => $this->formatTimestamp(time()),
+        ];
+    }
   }
 
   /**
