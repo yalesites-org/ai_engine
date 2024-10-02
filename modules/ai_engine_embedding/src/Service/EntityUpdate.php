@@ -150,14 +150,36 @@ class EntityUpdate {
    * a cleanup routine to find and delete out of date chunks.
    */
   public function addAllDocuments() {
+    $entityTypesToSend = ['node', 'media'];
+    $docTypes = ['node' => 'text', 'media' => 'media'];
     $config = $this->configFactory->get('ai_engine_embedding.settings');
-    $data = $this->getData("upsert", $config, [], "");
+
+    // Loop through entityTypesToSend and send.
+    foreach ($entityTypesToSend as $entityType) {
+      $data = $this->getData("upsert", $config, ['entity_type' => $entityType], "", $docTypes[$entityType]);
+      $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
+      // Send node post.
+      $this->sendPost($endpoint, $data);
+    }
+  }
+
+  /**
+   * Sends a post request to an endpoint with data.
+   *
+   * @param string $endpoint
+   *   The endpoint to send the data to.
+   * @param array $data
+   *   The data to send.
+   *
+   * @return mixed
+   *   The response from the post request.
+   */
+  protected function sendPost($endpoint, $data) {
     $httpClient = $this->httpClientFactory->fromOptions([
       'headers' => [
         'Content-Type' => 'application/json',
       ],
     ]);
-    $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
 
     try {
       $response = $httpClient->post($endpoint, ['json' => $data]);
@@ -388,7 +410,7 @@ class EntityUpdate {
    * @return array
    *   An array of data to send to the AI Embedding service.
    */
-  protected function getData($action = 'upsert', $config, $route_params = [], $data = ""): array {
+  protected function getData($action = 'upsert', $config, $route_params = [], $data = "", $doctype = 'text'): array {
     $allowed_actions = ['upsert'];
     if (!$config) {
       throw new \Exception('Missing configuration object.');
@@ -396,6 +418,12 @@ class EntityUpdate {
 
     if (!in_array($action, $allowed_actions)) {
       throw new \Exception('Invalid action provided.');
+    }
+
+    $allowed_doctypes = ['text', 'media'];
+
+    if (!in_array($doctype, $allowed_doctypes)) {
+      throw new \Exception('Invalid doctype provided.');
     }
 
     $chunk_size = $config->get('azure_chunk_size') ?? CHUNK_SIZE_DEFAULT;
@@ -407,7 +435,7 @@ class EntityUpdate {
 
     return [
       "action" => $action,
-      "doctype" => "text",
+      "doctype" => $doctype,
       "service_name" => $config->get('azure_search_service_name'),
       "index_name" => $config->get('azure_search_service_index'),
       "data" => $data,
