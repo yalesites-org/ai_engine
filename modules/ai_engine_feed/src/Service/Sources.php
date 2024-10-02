@@ -2,14 +2,14 @@
 
 namespace Drupal\ai_engine_feed\Service;
 
-use Drupal\ai_engine_feed\ApiLinkBuilderTrait;
-use Drupal\ai_engine_metadata\AiMetadataManager;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Render\RendererInterface;
+use Drupal\ai_engine_feed\ApiLinkBuilderTrait;
+use Drupal\ai_engine_metadata\AiMetadataManager;
 use Drupal\node\NodeInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -218,8 +218,10 @@ class Sources {
    */
   protected function queryEntities(array $params, bool $pager = TRUE): array {
     $entityType = $params['entityType'] ?? 'node';
+    $firstLetterEntityType = strtolower(substr($entityType, 0, 1));
 
     $allowedEntities = ['node', 'media'];
+
     // Query all publically available nodes.
     $query = $this->entityTypeManager
       ->getStorage($entityType)
@@ -235,8 +237,8 @@ class Sources {
     }
 
     // Optional filter by node ID. Useful for updating a single item.
-    if (!empty($params['entityType']) && $params['entityType'] == 'node' && !empty($params['id'])) {
-      $query->condition('nid', $params['id']);
+    if (!empty($params['entityType']) && in_array($params['entityType'], $allowedEntities) && !empty($params['id'])) {
+      $query->condition($firstLetterEntityType . 'id', $params['id']);
     }
 
     // Don't include nodes that are marked to be excluded in the AI metadata.
@@ -307,7 +309,8 @@ class Sources {
       $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
       $renderArray = $view_builder->view($entity, 'default');
       $returnValue = $this->renderer->render($renderArray);
-    } catch(\TypeError $e) {
+    }
+    catch (\TypeError $e) {
       $returnValue = '';
     }
 
