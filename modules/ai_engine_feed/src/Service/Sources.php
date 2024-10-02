@@ -109,8 +109,12 @@ class Sources {
    *   The request stack.
    * @param \Drupal\ai_engine_metadata\AiMetadataManager $ai_metadata_manager
    *   The AI metadata manager.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
+   *   The entity.
+   * @param \Drupal\Core\Config\ConfigFactory $configFactory
+   *   The configuration factory.
    * @param \Drupal\ai_engine_feed\ContentFeedManager $contentFeedManager
-   *   The entity field manager service.
+   *   The content feed manager data output service.
    */
   public function __construct(
     EntityTypeManagerInterface $entityTypeManager,
@@ -152,7 +156,7 @@ class Sources {
     $entities = $this->entityTypeManager->getStorage($entityType)->loadMultiple($ids);
     $entityData = [];
     foreach ($entities as $entity) {
-      /** @var \Drupal\node\Entity\Node $entity */
+      /** @var \Drupal\Core\Entity\EntityInterface $entity */
       $entityData[] = $this->generateEntityData($entity, $entityType);
     }
 
@@ -175,7 +179,15 @@ class Sources {
   }
 
   /**
+   * Use the Content Feed Plugin to generate entity data.
    *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   A content entity.
+   * @param string $entityType
+   *   The entity type.
+   *
+   * @return array
+   *   An array of entity data.
    */
   public function generateEntityData($entity, $entityType) {
     $plugin_id = $this->contentFeedManager->getPluginIdFromEntityType($entityType);
@@ -346,14 +358,14 @@ class Sources {
   }
 
   /**
-   *
+   * Retrieves the meta tags for a content entity.
    */
   public function getMetaTags($entity): string {
     return $this->aiMetadataManager->getAiMetadata($entity)['ai_tags'];
   }
 
   /**
-   *
+   * Retrieves the meta description for a content entity.
    */
   public function getMetaDescription($entity): string {
     return $this->aiMetadataManager->getAiMetadata($entity)['ai_description'];
