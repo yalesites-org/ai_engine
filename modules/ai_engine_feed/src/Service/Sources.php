@@ -9,6 +9,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\ai_engine_feed\ApiLinkBuilderTrait;
+use Drupal\ai_engine_feed\ContentFeedManager;
 use Drupal\ai_engine_metadata\AiMetadataManager;
 use Drupal\node\NodeInterface;
 use Psr\Log\LoggerInterface;
@@ -89,6 +90,13 @@ class Sources {
   protected $requestStack;
 
   /**
+   * The Content Feed Plugin Manager.
+   *
+   * @var \Drupal\ai_engine_feed\ContentFeedManager
+   */
+  protected $contentFeedManager;
+
+  /**
    * Constructs a new Sources object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
@@ -101,6 +109,8 @@ class Sources {
    *   The request stack.
    * @param \Drupal\ai_engine_metadata\AiMetadataManager $ai_metadata_manager
    *   The AI metadata manager.
+   * @param \Drupal\ai_engine_feed\ContentFeedManager $contentFeedManager
+   *   The entity field manager service.
    */
   public function __construct(
     EntityTypeManagerInterface $entityTypeManager,
@@ -110,6 +120,7 @@ class Sources {
     AiMetadataManager $ai_metadata_manager,
     EntityFieldManagerInterface $entityFieldManager,
     ConfigFactory $configFactory,
+    ContentFeedManager $contentFeedManager,
   ) {
     $this->entityTypeManager = $entityTypeManager;
     $this->logger = $logger;
@@ -118,6 +129,7 @@ class Sources {
     $this->aiMetadataManager = $ai_metadata_manager;
     $this->entityFieldManager = $entityFieldManager;
     $this->configFactory = $configFactory;
+    $this->contentFeedManager = $contentFeedManager;
   }
 
   /**
@@ -166,43 +178,9 @@ class Sources {
    *
    */
   public function generateEntityData($entity, $entityType) {
-    switch ($entityType) {
-      case 'node':
-        return [
-          'id' => $this->getSearchIndexId($entity),
-          'source' => 'drupal',
-          'documentType' => $this->getDocumentType($entity),
-          'documentId' => $entity->id(),
-          'documentUrl' => $this->getUrl($entity),
-          'documentTitle' => $entity->getTitle(),
-          'documentContent' => $this->processContentBody($entity),
-          'metaTags' => $this->aiMetadataManager->getAiMetadata($entity)['ai_tags'],
-          'metaDescription' => $this->aiMetadataManager->getAiMetadata($entity)['ai_description'],
-          'dateCreated' => $this->formatTimestamp($entity->getCreatedTime()),
-          'dateModified' => $this->formatTimestamp($entity->getChangedTime()),
-          'dateProcessed' => $this->formatTimestamp(time()),
-        ];
-
-      case 'media':
-        $fileData = $entity->get('field_media_file')->first()->getValue();
-        $fileTitle = $fileData['description'];
-        $file = $entity->get('field_media_file')->entity;
-        $fileUrl = $file->createFileUrl(FALSE);
-        return [
-          'id' => $this->getSearchIndexId($entity),
-          'source' => 'drupal',
-          'documentType' => $this->getDocumentType($entity),
-          'documentId' => $entity->id(),
-          'documentUrl' => $this->getUrl($entity),
-          'documentTitle' => $fileTitle,
-          'documentContent' => $fileUrl,
-          'metaTags' => $this->aiMetadataManager->getAiMetadata($entity)['ai_tags'],
-          'metaDescription' => $this->aiMetadataManager->getAiMetadata($entity)['ai_description'],
-          'dateCreated' => $this->formatTimestamp($entity->getCreatedTime()),
-          'dateModified' => $this->formatTimestamp($entity->getChangedTime()),
-          'dateProcessed' => $this->formatTimestamp(time()),
-        ];
-    }
+    $plugin_id = $this->contentFeedManager->getPluginIdFromEntityType($entityType);
+    $plugin = $this->contentFeedManager->createInstance($plugin_id);
+    return $plugin->generateFeed($this, $entity);
   }
 
   /**
@@ -290,7 +268,7 @@ class Sources {
    * @return string
    *   The formatted value of the date.
    */
-  protected function formatTimestamp(int $timestamp): string {
+  public function formatTimestamp(int $timestamp): string {
     $dateTime = DrupalDateTime::createFromTimestamp($timestamp);
     return $dateTime->format(\DateTime::ATOM);
   }
@@ -304,7 +282,7 @@ class Sources {
    * @return \Drupal\Component\Render\MarkupInterface
    *   The rendered HTML.
    */
-  protected function processContentBody(EntityInterface $entity) {
+  public function processContentBody(EntityInterface $entity) {
     try {
       $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
       $renderArray = $view_builder->view($entity, 'default');
@@ -346,7 +324,7 @@ class Sources {
    * @return string
    *   A string representing the type of content.
    */
-  protected function getDocumentType(EntityInterface $entity): string {
+  public function getDocumentType(EntityInterface $entity): string {
     $type = $entity->getEntityTypeId();
     if (!empty($entity->bundle())) {
       $type .= '/' . $entity->bundle();
@@ -363,8 +341,22 @@ class Sources {
    * @return string
    *   The canonical URL as a string.
    */
-  protected function getUrl(EntityInterface $entity): string {
+  public function getUrl(EntityInterface $entity): string {
     return $entity->toUrl('canonical', ['absolute' => TRUE])->toString();
+  }
+
+  /**
+   *
+   */
+  public function getMetaTags($entity): string {
+    return $this->aiMetadataManager->getAiMetadata($entity)['ai_tags'];
+  }
+
+  /**
+   *
+   */
+  public function getMetaDescription($entity): string {
+    return $this->aiMetadataManager->getAiMetadata($entity)['ai_description'];
   }
 
 }
