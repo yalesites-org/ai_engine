@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * General functions and hook implementations for the AI Engine Metadata module.
+ */
+
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -14,7 +19,12 @@ function ai_engine_metadata_field_widget_single_element_metatag_firehose_form_al
   // Only display the AI metatags form if it enabled in the admin interface.
   // See: admin/config/ai-engine/metadata-admin.
   $config = \Drupal::config('ai_engine_metadata.settings');
+  $entity = $form_state->getFormObject()->getEntity();
   if (!$config->get('enable')) {
     unset($field_widget_complete_form['ai_engine']);
+  }
+  // Disable indexing of media by default if it's new and has ai metatags enabled.
+  elseif ($entity->isNew() && $entity->getEntityTypeId() == 'media' && isset($field_widget_complete_form['ai_engine']['ai_disable_indexing'])) {
+    $field_widget_complete_form['ai_engine']['ai_disable_indexing']['#default_value'] = 'disabled';
   }
 }
