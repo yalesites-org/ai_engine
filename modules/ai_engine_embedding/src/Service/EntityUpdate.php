@@ -353,8 +353,29 @@ class EntityUpdate {
    */
   protected function isSupportedEntityType(EntityInterface $entity) {
     $allowed_entities = ['node', 'media'];
+    $entity_type_id = $entity->getEntityTypeId();
 
-    return in_array($entity->getEntityTypeId(), $allowed_entities);
+    if ($entity_type_id == 'media') {
+      return $this->isSupportedMediaType($entity);
+    }
+    else {
+      return in_array($entity->getEntityTypeId(), $allowed_entities);
+    }
+  }
+
+  /**
+   * Checks if an entity is supported by the embedding system.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to check.
+   *
+   * @return bool
+   *   TRUE if the entity should be embedded, FALSE otherwise.
+   */
+  protected function isSupportedMediaType(EntityInterface $entity) {
+    $config = $this->configFactory->get('ai_engine_embedding.settings');
+    $allowed_media_types = $config->get('included_media_types');
+    return in_array($entity->bundle(), $allowed_media_types);
   }
 
   /**
