@@ -2,9 +2,11 @@
 
 namespace Drupal\ai_engine_embedding\Form;
 
-use Drupal\ai_engine_embedding\Service\EntityUpdate;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\ai_engine_embedding\Service\EntityUpdate;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Setting form for the AI Engine Embedding module.
@@ -19,6 +21,13 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
   const CONFIG_NAME = 'ai_engine_embedding.settings';
 
   /**
+   * Entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManager
+   */
+  protected $entityTypeManager;
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -30,6 +39,21 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
    */
   protected function getEditableConfigNames() {
     return [self::CONFIG_NAME];
+  }
+
+  public function __construct(
+    EntityTypeManagerInterface $entityTypeManager,
+  ) {
+    $this->entityTypeManager = $entityTypeManager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity_type.manager'),
+    );
   }
 
   /**
@@ -66,6 +90,13 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
       '#title' => $this->t('Chunk Size'),
       '#description' => $this->t('The chunk size to split each document into'),
       '#default_value' => $config->get('azure_chunk_size') ?? 3000,
+    ];
+    $form['included_media_types'] = [
+      '#type' => 'checkboxes',
+      '#title' => $this->t('Included Media Types'),
+      '#options' => $this->getMediaTypes(),
+      '#default_value' => array_keys($config->get('included_media_types') ?? []),
+      '#default_value' => $config->get('included_media_types') ?? [],
     ];
     $form['actions'] = [
       '#type' => 'details',
@@ -112,6 +143,7 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
       ->set('azure_search_service_index', $form_state->getValue('azure_search_service_index'))
       ->set('azure_embedding_service_url', $form_state->getValue('azure_embedding_service_url'))
       ->set('azure_chunk_size', $azure_chunk_size)
+      ->set('included_media_types', $form_state->getValue('included_media_types'))
       ->save();
     parent::submitForm($form, $form_state);
   }
@@ -122,6 +154,21 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
   public function actionUpsertAllDocuments(array &$form, FormStateInterface $form_state) {
     $service = \Drupal::service('ai_engine_embedding.entity_update');
     $service->addAllDocuments();
+  }
+
+  /**
+   * Retrieves the list of media types.
+   *
+   * @return array
+   *   An array of media type labels.
+   */
+  protected function getMediaTypes() {
+    $media_types = [];
+    foreach ($this->entityTypeManager->getStorage('media_type')->loadMultiple() as $media_type) {
+      $media_types[$media_type->id()] = $media_type->label();
+    }
+
+    return $media_types;
   }
 
 }
