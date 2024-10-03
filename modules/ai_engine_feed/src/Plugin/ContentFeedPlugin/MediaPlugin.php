@@ -50,7 +50,13 @@ class MediaPlugin extends ContentFeedBase {
   }
 
   /**
+   * Get the file data field since it can be multiple names.
    *
+   * @param object $entity
+   *   The entity object.
+   *
+   * @return object|null
+   *   The file data field.
    */
   protected function getFileDataField($entity) {
     $possibilities = ['field_media_file', 'field_media_image'];
