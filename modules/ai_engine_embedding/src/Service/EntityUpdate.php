@@ -400,7 +400,7 @@ class EntityUpdate {
    * @return array
    *   An array of data to send to the AI Embedding service.
    */
-  protected function getData($action = 'upsert', $config, $route_params = [], $data = "", $doctype = 'text'): array {
+  protected function getData($action = 'upsert', $config = NULL, $route_params = [], $data = "", $doctype = 'text'): array {
     $allowed_actions = ['upsert'];
     if (!$config) {
       throw new \Exception('Missing configuration object.');
