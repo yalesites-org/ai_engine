@@ -158,8 +158,22 @@ class EntityUpdate {
     foreach ($entityTypesToSend as $entityType) {
       $data = $this->getData("upsert", $config, ['entityType' => $entityType], "", $docTypes[$entityType]);
       $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
-      // Send node post.
-      $this->sendPost($endpoint, $data);
+      $response = $this->sendJsonPost($endpoint, $data);
+
+      if ($response->getStatusCode() === 200) {
+        $responseData = json_decode($response->getBody()->getContents(), TRUE);
+        $this->logger->notice(
+          'Upserted node @id from vector database. Service response: @response',
+          ['@response' => print_r($responseData, TRUE)]
+        );
+      }
+      else {
+        $this->logger->notice(
+          'Unable to upsert node @id to vector database. POST failed with status code: @code',
+          ['@code' => $response->getStatusCode()]
+        );
+        return NULL;
+      }
     }
   }
 
@@ -171,10 +185,10 @@ class EntityUpdate {
    * @param array $data
    *   The data to send.
    *
-   * @return mixed
+   * @return \Psr\Http\Message\ResponseInterface
    *   The response from the post request.
    */
-  protected function sendPost($endpoint, $data) {
+  protected function sendJsonPost($endpoint, $data) {
     $httpClient = $this->httpClientFactory->fromOptions([
       'headers' => [
         'Content-Type' => 'application/json',
@@ -182,26 +196,11 @@ class EntityUpdate {
     ]);
 
     try {
-      $response = $httpClient->post($endpoint, ['json' => $data]);
-
-      if ($response->getStatusCode() === 200) {
-        $responseData = json_decode($response->getBody()->getContents(), TRUE);
-        $this->logger->notice(
-          'Removed node @id from vector database. Service response: @response',
-          ['@response' => print_r($responseData, TRUE)]
-        );
-      }
-      else {
-        $this->logger->notice(
-          'Unable to remove node @id from vector database. POST failed with status code: @code',
-          ['@code' => $response->getStatusCode()]
-        );
-        return NULL;
-      }
+      return $httpClient->post($endpoint, ['json' => $data]);
     }
     catch (\Exception $e) {
       $this->logger->error(
-        'An error occurred while upserting document: @error',
+        'An error occurred while posting document: @error',
         ['@error' => $e->getMessage()]
       );
       return NULL;
@@ -220,40 +219,26 @@ class EntityUpdate {
    */
   public function upsertDocument(EntityInterface $entity) {
     $config = $this->configFactory->get('ai_engine_embedding.settings');
+    $entityTypeId = $entity->getEntityTypeId();
     $route_params = [
-      'entityType' => $entity->getEntityTypeId(),
+      'entityType' => $entityTypeId,
       'id' => $entity->id(),
     ];
     $data = $this->getData("upsert", $config, $route_params, "");
-    $httpClient = $this->httpClientFactory->fromOptions([
-      'headers' => [
-        'Content-Type' => 'application/json',
-      ],
-    ]);
     $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
+    $response = $this->sendJsonPost($endpoint, $data);
 
-    try {
-      $response = $httpClient->post($endpoint, ['json' => $data]);
-
-      if ($response->getStatusCode() === 200) {
-        $responseData = json_decode($response->getBody()->getContents(), TRUE);
-        $this->logger->notice(
-          'Removed node @id from vector database. Service response: @response',
-          ['@id' => $entity->id(), '@response' => print_r($responseData, TRUE)]
-        );
-      }
-      else {
-        $this->logger->notice(
-          'Unable to remove node @id from vector database. POST failed with status code: @code',
-          ['@id' => $entity->id(), '@code' => $response->getStatusCode()]
-        );
-        return NULL;
-      }
+    if ($response->getStatusCode() === 200) {
+      $responseData = json_decode($response->getBody()->getContents(), TRUE);
+      $this->logger->notice(
+        'Upserted node @id to vector database. Service response: @response',
+        ['@id' => $entity->id(), '@response' => print_r($responseData, TRUE)]
+      );
     }
-    catch (\Exception $e) {
-      $this->logger->error(
-        'An error occurred while upserting document: @error',
-        ['@error' => $e->getMessage()]
+    else {
+      $this->logger->notice(
+        'Unable to upsert node @id to vector database. POST failed with status code: @code',
+        ['@id' => $entity->id(), '@code' => $response->getStatusCode()]
       );
       return NULL;
     }
@@ -274,35 +259,20 @@ class EntityUpdate {
       "id_list" => [],
       "id_filter_list" => [$this->sources->getSearchIndexId($entity)],
     ];
-    $httpClient = $this->httpClientFactory->fromOptions([
-      'headers' => [
-        'Content-Type' => 'application/json',
-      ],
-    ]);
     $endpoint = $config->get('azure_embedding_service_url') . '/api/deletebyid';
+    $response = $this->sendJsonPost($endpoint, $data);
 
-    try {
-      $response = $httpClient->post($endpoint, ['json' => $data]);
-
-      if ($response->getStatusCode() === 200) {
-        $responseData = json_decode($response->getBody()->getContents(), TRUE);
-        $this->logger->notice(
-          'Removed node @id from vector database. Service response: @response',
-          ['@id' => $entity->id(), '@response' => print_r($responseData, TRUE)]
-        );
-      }
-      else {
-        $this->logger->notice(
-          'Unable to remove node @id from vector database. POST failed with status code: @code',
-          ['@id' => $entity->id(), '@code' => $response->getStatusCode()]
-        );
-        return NULL;
-      }
+    if ($response->getStatusCode() === 200) {
+      $responseData = json_decode($response->getBody()->getContents(), TRUE);
+      $this->logger->notice(
+        'Removed node @id from vector database. Service response: @response',
+        ['@id' => $entity->id(), '@response' => print_r($responseData, TRUE)]
+      );
     }
-    catch (\Exception $e) {
-      $this->logger->error(
-        'An error occurred while deleting document: @error',
-        ['@error' => $e->getMessage()]
+    else {
+      $this->logger->notice(
+        'Unable to remove node @id from vector database. POST failed with status code: @code',
+        ['@id' => $entity->id(), '@code' => $response->getStatusCode()]
       );
       return NULL;
     }
@@ -430,7 +400,7 @@ class EntityUpdate {
    * @return array
    *   An array of data to send to the AI Embedding service.
    */
-  protected function getData($action = 'upsert', $config, $route_params = [], $data = "", $doctype = 'text'): array {
+  protected function getData($action = 'upsert', $config = NULL, $route_params = [], $data = "", $doctype = 'text'): array {
     $allowed_actions = ['upsert'];
     if (!$config) {
       throw new \Exception('Missing configuration object.');
