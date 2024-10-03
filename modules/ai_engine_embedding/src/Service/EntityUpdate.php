@@ -220,7 +220,6 @@ class EntityUpdate {
    */
   public function upsertDocument(EntityInterface $entity) {
     $config = $this->configFactory->get('ai_engine_embedding.settings');
-    $chunk_size = $config->get('azure_chunk_size') || CHUNK_SIZE_DEFAULT;
     $route_params = [
       'entityType' => $entity->getEntityTypeId(),
       'id' => $entity->id(),
@@ -447,7 +446,7 @@ class EntityUpdate {
       throw new \Exception('Invalid doctype provided.');
     }
 
-    $chunk_size = $config->get('azure_chunk_size') ?? CHUNK_SIZE_DEFAULT;
+    $chunk_size = $config->get('azure_chunk_size') ?? self::CHUNK_SIZE_DEFAULT;
 
     $data_endpoint = "";
     if ($data == "") {
