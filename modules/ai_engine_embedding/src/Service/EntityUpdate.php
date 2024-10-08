@@ -14,7 +14,19 @@ use Drupal\metatag\MetatagManager;
  * Service for updating the vector database as content is updated.
  */
 class EntityUpdate {
+  /**
+   * The default chunk size for sending data to the AI Embedding service.
+   *
+   * @var int
+   */
   const CHUNK_SIZE_DEFAULT = 3000;
+
+  /**
+   * The allowed entity types for indexing.
+   *
+   * @var array
+   */
+  const ALLOWED_ENTITIES = ['node', 'media'];
 
   /**
    * The configuration factory.
@@ -150,12 +162,11 @@ class EntityUpdate {
    * a cleanup routine to find and delete out of date chunks.
    */
   public function addAllDocuments() {
-    $entityTypesToSend = ['node', 'media'];
     $docTypes = ['node' => 'text', 'media' => 'media'];
     $config = $this->configFactory->get('ai_engine_embedding.settings');
 
     // Loop through entityTypesToSend and send.
-    foreach ($entityTypesToSend as $entityType) {
+    foreach (self::ALLOWED_ENTITIES as $entityType) {
       $data = $this->getData("upsert", $config, ['entityType' => $entityType], "", $docTypes[$entityType]);
       $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
       $response = $this->sendJsonPost($endpoint, $data);
@@ -321,14 +332,13 @@ class EntityUpdate {
    *   TRUE if the entity should be embedded, FALSE otherwise.
    */
   protected function isSupportedEntityType(EntityInterface $entity) {
-    $allowed_entities = ['node', 'media'];
     $entity_type_id = $entity->getEntityTypeId();
 
     if ($entity_type_id == 'media') {
       return $this->isSupportedMediaType($entity);
     }
     else {
-      return in_array($entity->getEntityTypeId(), $allowed_entities);
+      return in_array($entity->getEntityTypeId(), self::ALLOWED_ENTITIES);
     }
   }
 
