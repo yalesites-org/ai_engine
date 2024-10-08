@@ -36,14 +36,15 @@ use Drupal\Core\Session\AccountInterface;
 final class EnableAi extends ActionBase {
   const METATAG_FIELD_NAME = 'ai_disable_indexing';
   const ACTION_VALUE = '';
+  const MANAGE_AI_PERMISSION = 'manage ai engine settings';
 
   /**
    * {@inheritdoc}
    */
   public function access($entity, ?AccountInterface $account = NULL, $return_as_object = FALSE): AccessResultInterface|bool {
     /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
-    $access = $entity->access('update', $account, TRUE);
-    /*->andIf($entity->metatag->ai_disable_indexing->access('edit', $account, TRUE));*/
+    $access = $entity->access('update', $account, TRUE)
+      ->andIf($account->hasPermission(self::MANAGE_AI_PERMISSION));
     return $return_as_object ? $access : $access->isAllowed();
   }
 
