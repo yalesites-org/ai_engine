@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\ai_engine_metadata\Plugin\Action;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Action\ActionBase;
 use Drupal\Core\Entity\ContentEntityInterface;
@@ -15,7 +16,7 @@ use Drupal\Core\Session\AccountInterface;
  * @Action(
  *   id = "ai_engine_enable_ai",
  *   label = @Translation("Enable AI"),
- *   type = "entity",
+ *   type = "node",
  *   category = @Translation("Custom"),
  * )
  *
@@ -33,7 +34,7 @@ use Drupal\Core\Session\AccountInterface;
  * The whole action API is subject of change.
  * @see https://www.drupal.org/project/drupal/issues/2011038
  */
-final class EnableAi extends ActionBase {
+class EnableAi extends ActionBase {
   const METATAG_FIELD_NAME = 'ai_disable_indexing';
   const ACTION_VALUE = '';
   const MANAGE_AI_PERMISSION = 'manage ai engine settings';
@@ -44,7 +45,7 @@ final class EnableAi extends ActionBase {
   public function access($entity, ?AccountInterface $account = NULL, $return_as_object = FALSE): AccessResultInterface|bool {
     /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
     $access = $entity->access('update', $account, TRUE)
-      ->andIf($account->hasPermission(self::MANAGE_AI_PERMISSION));
+      ->andIf(AccessResult::allowedIfHasPermission($account, self::MANAGE_AI_PERMISSION));
     return $return_as_object ? $access : $access->isAllowed();
   }
 
