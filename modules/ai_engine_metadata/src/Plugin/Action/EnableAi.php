@@ -15,7 +15,7 @@ use Drupal\Core\Session\AccountInterface;
  * @Action(
  *   id = "ai_engine_enable_ai",
  *   label = @Translation("Enable AI"),
- *   type = "node",
+ *   type = "entity",
  *   category = @Translation("Custom"),
  * )
  *
@@ -34,6 +34,8 @@ use Drupal\Core\Session\AccountInterface;
  * @see https://www.drupal.org/project/drupal/issues/2011038
  */
 final class EnableAi extends ActionBase {
+  const METATAG_FIELD_NAME = 'ai_disable_indexing';
+  const ACTION_VALUE = '';
 
   /**
    * {@inheritdoc}
@@ -49,8 +51,17 @@ final class EnableAi extends ActionBase {
    * {@inheritdoc}
    */
   public function execute(?ContentEntityInterface $entity = NULL): void {
-    $entity->metatag->ai_disable_indexing = '';
-    $entity->save();
+    if (!$entity) {
+      return;
+    }
+
+    if ($entity->hasField('field_metatags')) {
+      $metaTagsArray = json_decode($entity->field_metatags->value ?? "{}", TRUE);
+      $metaTagsArray[self::METATAG_FIELD_NAME] = self::ACTION_VALUE;
+      $metaTagsJson = json_encode($metaTagsArray);
+      $entity->field_metatags->value = $metaTagsJson;
+      $entity->save();
+    }
   }
 
 }
