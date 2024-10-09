@@ -8,18 +8,15 @@
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * @file
- * Contains ai_engine_metadata.module functions.
- */
-
-/**
  * Implements hook_field_widget_single_element_WIDGET_TYPE_form_alter().
  */
 function ai_engine_metadata_field_widget_single_element_metatag_firehose_form_alter(&$field_widget_complete_form, FormStateInterface $form_state, $context) {
   // Only display the AI metatags form if it enabled in the admin interface.
   // See: admin/config/ai-engine/metadata-admin.
   $config = \Drupal::config('ai_engine_metadata.settings');
-  $entity = $form_state->getFormObject()->getEntity();
+  /** @var \Drupal\Core\Entity\EntityForm **/
+  $formObject = $form_state->getFormObject();
+  $entity = $formObject->getEntity();
   if (!$config->get('enable')) {
     unset($field_widget_complete_form['ai_engine']);
   }
