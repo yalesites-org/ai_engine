@@ -353,7 +353,7 @@ class EntityUpdate {
    */
   protected function isSupportedMediaType(EntityInterface $entity) {
     $config = $this->configFactory->get('ai_engine_embedding.settings');
-    $allowed_media_types = $config->get('included_media_types');
+    $allowed_media_types = $config->get('included_media_types') ?? [];
     return in_array($entity->bundle(), $allowed_media_types);
   }
 
