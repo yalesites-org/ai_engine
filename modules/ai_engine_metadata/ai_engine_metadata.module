@@ -20,8 +20,21 @@ function ai_engine_metadata_field_widget_single_element_metatag_firehose_form_al
   if (!$config->get('enable')) {
     unset($field_widget_complete_form['ai_engine']);
   }
-  // Disable indexing of media by default if it's new and has ai metatags enabled.
-  elseif ($entity->isNew() && $entity->getEntityTypeId() == 'media' && isset($field_widget_complete_form['ai_engine']['ai_disable_indexing'])) {
+  elseif (_ai_engine_is_new_media_with_ai($entity, $field_widget_complete_form)) {
     $field_widget_complete_form['ai_engine']['ai_disable_indexing']['#default_value'] = 'disabled';
   }
+}
+
+/**
+ * Determines if the entity is a new media entity with AI metatags.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The entity to check.
+ * @param array $field_widget_complete_form
+ *   The form array to check.
+ */
+function _ai_engine_is_new_media_with_ai($entity, $field_widget_complete_form) {
+  return $entity->isNew() &&
+    $entity->getEntityTypeId() == 'media' &&
+    isset($field_widget_complete_form['ai_engine']['ai_disable_indexing']);
 }
