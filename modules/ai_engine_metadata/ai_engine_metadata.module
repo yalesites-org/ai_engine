@@ -1,11 +1,11 @@
 <?php
 
-use Drupal\Core\Form\FormStateInterface;
-
 /**
  * @file
- * Contains ai_engine_metadata.module functions.
+ * General functions and hook implementations for the AI Engine Metadata module.
  */
+
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Implements hook_field_widget_single_element_WIDGET_TYPE_form_alter().
@@ -14,7 +14,27 @@ function ai_engine_metadata_field_widget_single_element_metatag_firehose_form_al
   // Only display the AI metatags form if it enabled in the admin interface.
   // See: admin/config/ai-engine/metadata-admin.
   $config = \Drupal::config('ai_engine_metadata.settings');
+  /** @var \Drupal\Core\Entity\EntityForm **/
+  $formObject = $form_state->getFormObject();
+  $entity = $formObject->getEntity();
   if (!$config->get('enable')) {
     unset($field_widget_complete_form['ai_engine']);
   }
+  elseif (_ai_engine_is_new_media_with_ai($entity, $field_widget_complete_form)) {
+    $field_widget_complete_form['ai_engine']['ai_disable_indexing']['#default_value'] = 'disabled';
+  }
+}
+
+/**
+ * Determines if the entity is a new media entity with AI metatags.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The entity to check.
+ * @param array $field_widget_complete_form
+ *   The form array to check.
+ */
+function _ai_engine_is_new_media_with_ai($entity, $field_widget_complete_form) {
+  return $entity->isNew() &&
+    $entity->getEntityTypeId() == 'media' &&
+    isset($field_widget_complete_form['ai_engine']['ai_disable_indexing']);
 }
