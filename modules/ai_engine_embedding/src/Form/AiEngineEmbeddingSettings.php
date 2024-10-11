@@ -95,7 +95,6 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
       '#type' => 'checkboxes',
       '#title' => $this->t('Included Media Types'),
       '#options' => $this->getMediaTypes(),
-      '#default_value' => array_keys($config->get('included_media_types') ?? []),
       '#default_value' => $config->get('included_media_types') ?? [],
     ];
     $form['actions'] = [
