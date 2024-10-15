@@ -73,7 +73,7 @@ class MetatagValueSetAction extends ActionBase implements ContainerFactoryPlugin
   }
 
   /**
-   *
+   * {@inheritdoc}
    */
   public function access($entity, ?AccountInterface $account = NULL, $return_as_object = FALSE): AccessResultInterface|bool {
     if (!$this->isServiceEnabled()) {
@@ -82,7 +82,7 @@ class MetatagValueSetAction extends ActionBase implements ContainerFactoryPlugin
 
     /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
     $access = $entity->access('update', $account, TRUE)
-      ->andIf(AccessResult::allowedIfHasPermission($account, static::$manageAiPermissionName))
+      ->andIf(AccessResult::allowedIfHasPermission($account, static::$manageAiPermissionName));
     return $return_as_object ? $access : $access->isAllowed();
   }
 
@@ -106,7 +106,7 @@ class MetatagValueSetAction extends ActionBase implements ContainerFactoryPlugin
       return;
     }
 
-    if ($entity->hasField(static::$entityMetatagFieldName) {
+    if ($entity->hasField(static::$entityMetatagFieldName)) {
       $metaTagsArray = json_decode($entity->field_metatags->value ?? "{}", TRUE);
       $metaTagsArray[static::$metatagFieldName] = static::$actionValue;
       $metaTagsJson = json_encode($metaTagsArray);
