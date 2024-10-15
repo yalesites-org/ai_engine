@@ -2,8 +2,13 @@
 
 namespace Drupal\ai_engine_metadata\Plugin\Action;
 
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Action\ActionBase;
+use Drupal\Core\Config\ClientFactoryInterface;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -73,7 +78,7 @@ class MetatagValueSetAction extends ActionBase implements ContainerFactoryPlugin
   }
 
   /**
-   *
+   * {@inheritdoc}
    */
   public function access($entity, ?AccountInterface $account = NULL, $return_as_object = FALSE): AccessResultInterface|bool {
     if (!$this->isServiceEnabled()) {
@@ -82,7 +87,7 @@ class MetatagValueSetAction extends ActionBase implements ContainerFactoryPlugin
 
     /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
     $access = $entity->access('update', $account, TRUE)
-      ->andIf(AccessResult::allowedIfHasPermission($account, static::$manageAiPermissionName))
+      ->andIf(AccessResult::allowedIfHasPermission($account, static::$manageAiPermissionName));
     return $return_as_object ? $access : $access->isAllowed();
   }
 
@@ -106,7 +111,7 @@ class MetatagValueSetAction extends ActionBase implements ContainerFactoryPlugin
       return;
     }
 
-    if ($entity->hasField(static::$entityMetatagFieldName) {
+    if ($entity->hasField(static::$entityMetatagFieldName)) {
       $metaTagsArray = json_decode($entity->field_metatags->value ?? "{}", TRUE);
       $metaTagsArray[static::$metatagFieldName] = static::$actionValue;
       $metaTagsJson = json_encode($metaTagsArray);

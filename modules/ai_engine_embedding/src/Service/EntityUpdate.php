@@ -123,10 +123,10 @@ class EntityUpdate {
    *   A content entity in Drupal.
    */
   public function update(EntityInterface $entity) {
-    if (!$this->isServiceEnabled() || !$this->isSupportedEntityType($entity)) {
+    if (!$this->isServiceEnabled() || !$this->isSupportedEntityType($entity) || $this->isDrafted($entity)) {
       return;
     }
-    elseif (!$this->isIndexable($entity)) {
+    elseif (!$this->isIndexable($entity) && $this->isNotDrafted($entity)) {
       $this->removeDocument($entity);
     }
     else {
@@ -144,7 +144,8 @@ class EntityUpdate {
    *   A content entity in Drupal.
    */
   public function delete(EntityInterface $entity) {
-    if (!$this->isServiceEnabled() || !$this->isSupportedEntityType($entity)) {
+    dpm($entity);
+    if (!$this->isServiceEnabled() || !$this->isSupportedEntityType($entity) || !$this->isNotDrafted($entity)) {
       return;
     }
     $this->removeDocument($entity);
@@ -442,6 +443,36 @@ class EntityUpdate {
       "data_endpoint" => $data_endpoint,
       "chunk_size" => $chunk_size,
     ];
+  }
+
+  /**
+   * Check if the entity is not in a draft state.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to check.
+   *
+   * @return bool
+   *   TRUE if the entity is not in a draft state, FALSE otherwise.
+   */
+  protected function isNotDrafted($entity) {
+    if ($entity->hasField('moderation_state')) {
+      $moderation_state = $entity->get('moderation_state')->value;
+      return $moderation_state != 'draft';
+    }
+    return $entity->isPublished();
+  }
+
+  /**
+   * Check if the entity is in a draft state.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to check.
+   *
+   * @return bool
+   *   TRUE if the entity is in a draft state, FALSE otherwise.
+   */
+  protected function isDrafted($entity) {
+    return !$this->isNotDrafted($entity);
   }
 
 }
