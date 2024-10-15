@@ -4,6 +4,7 @@ namespace Drupal\ai_engine_metadata\Plugin\Action;
 
 use Drupal\Core\Action\ActionBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
