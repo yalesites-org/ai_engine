@@ -2,10 +2,13 @@
 
 namespace Drupal\ai_engine_metadata\Plugin\Action;
 
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Action\ActionBase;
+use Drupal\Core\Config\ClientFactoryInterface;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\ai_engine_embedding\ClientFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
