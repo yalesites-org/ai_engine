@@ -5,7 +5,7 @@ namespace Drupal\ai_engine_metadata\Plugin\Action;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Action\ActionBase;
-use Drupal\Core\Config\ClientFactoryInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -13,15 +13,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Constructs a MetatagValueSetAction object.
- *
- * @param array $configuration
- *   A configuration array containing information about the plugin instance.
- * @param string $plugin_id
- *   The plugin_id for the plugin instance.
- * @param mixed $plugin_definition
- *   The plugin implementation definition.
- * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
- *   The configuration factory.
  */
 class MetatagValueSetAction extends ActionBase implements ContainerFactoryPluginInterface {
 
@@ -60,7 +51,19 @@ class MetatagValueSetAction extends ActionBase implements ContainerFactoryPlugin
    */
   protected $configFactory;
 
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, ClientFactoryInterface $configFactory) {
+  /**
+   * Constructs a MetatagValueSetAction object.
+   *
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin_id for the plugin instance.
+   * @param mixed $plugin_definition
+   *   The plugin implementation definition.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
+   *   The configuration factory.
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, ConfigFactoryInterface $configFactory) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->configFactory = $configFactory;
   }
