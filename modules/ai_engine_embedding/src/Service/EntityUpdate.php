@@ -144,7 +144,6 @@ class EntityUpdate {
    *   A content entity in Drupal.
    */
   public function delete(EntityInterface $entity) {
-    dpm($entity);
     if (!$this->isServiceEnabled() || !$this->isSupportedEntityType($entity) || !$this->isNotDrafted($entity)) {
       return;
     }
