@@ -1,0 +1,3 @@
+link_decoration:
+  js:
+    js/link_decoration.js: {}
