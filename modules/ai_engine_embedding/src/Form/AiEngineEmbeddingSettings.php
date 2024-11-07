@@ -161,11 +161,14 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
    * @return array
    *   An array of media type labels.
    */
-  protected function getMediaTypes() {
+  protected function getMediaTypes(): array {
     $media_types = [];
+
     foreach ($this->entityTypeManager->getStorage('media_type')->loadMultiple() as $media_type) {
       $media_types[$media_type->id()] = $media_type->label();
     }
+
+    asort($media_types);
 
     return $media_types;
   }
