@@ -23,6 +23,7 @@ class MediaPlugin extends ContentFeedBase {
       throw new \Exception('No file data field found.');
     }
 
+    $entityTitle = $entity->label();
     $fileData = $fileDataField->first()->getValue();
     $fileTitle = '';
     foreach ($titleFields as $field) {
@@ -39,8 +40,9 @@ class MediaPlugin extends ContentFeedBase {
       'documentType' => $source->getDocumentType($entity),
       'documentId' => $entity->id(),
       'documentUrl' => $fileUrl,
-      'documentTitle' => $fileTitle,
+      'documentTitle' => $entityTitle,
       'documentContent' => '',
+      'documentDescription' => $fileTitle,
       'metaTags' => $source->getMetaTags($entity),
       'metaDescription' => $source->getMetaDescription($entity),
       'dateCreated' => $source->formatTimestamp($entity->getCreatedTime()),
