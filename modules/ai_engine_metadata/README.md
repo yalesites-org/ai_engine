@@ -36,6 +36,14 @@ $aiDescription = $aiTags['ai_tags'];
 $aiDisableIndexing = $aiTags['ai_disable_indexing'];
 ```
 
+## To utilize AI metadata
+
+1. Create a metatags field on the content type you're interested in using this on (we recommend it be named `field_metatags`)
+2. In the metatags settings, enable `AI Metadata` for the content type you are interested in using AI with
+3. In `AI Engine->Metadata Admin`, enable AI Metadata features
+4. If you named the metatags field something other than `field_metatags`, go to `AI Engine->Feed Settings` and select the metatag field you created so it can look at it.
+5. When you go to a content type that has the above, notice now you have access to the Metatag Fields mentioned above in this document.
+
 ## Requirements
 
 - Drupal 9 or later
