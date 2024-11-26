@@ -162,12 +162,12 @@ class EntityUpdate {
    * a cleanup routine to find and delete out of date chunks.
    */
   public function addAllDocuments() {
-    $docTypes = ['node' => 'text', 'media' => 'media'];
+    $docType = "text";
     $config = $this->configFactory->get('ai_engine_embedding.settings');
 
     // Loop through entityTypesToSend and send.
     foreach (self::ALLOWED_ENTITIES as $entityType) {
-      $data = $this->getData("upsert", $config, ['entityType' => $entityType], "", $docTypes[$entityType]);
+      $data = $this->getData("upsert", $config, ['entityType' => $entityType], "", $docType);
       $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
       $response = $this->sendJsonPost($endpoint, $data);
 
