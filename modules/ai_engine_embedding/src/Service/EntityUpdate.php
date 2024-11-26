@@ -162,14 +162,21 @@ class EntityUpdate {
    * a cleanup routine to find and delete out of date chunks.
    */
   public function addAllDocuments() {
-    $docTypes = ['node' => 'text', 'media' => 'media'];
+    $docType = "text";
     $config = $this->configFactory->get('ai_engine_embedding.settings');
 
     // Loop through entityTypesToSend and send.
     foreach (self::ALLOWED_ENTITIES as $entityType) {
-      $data = $this->getData("upsert", $config, ['entityType' => $entityType], "", $docTypes[$entityType]);
+      $data = $this->getData("upsert", $config, ['entityType' => $entityType], "", $docType);
       $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
       $response = $this->sendJsonPost($endpoint, $data);
+
+      if (!$response) {
+        $this->logger->notice(
+          'Unable to upsert to vector database. Response not successful. Check the Azure embedding service URL.',
+        );
+        return NULL;
+      }
 
       if ($response->getStatusCode() === 200) {
         $responseData = json_decode($response->getBody()->getContents(), TRUE);
@@ -241,7 +248,7 @@ class EntityUpdate {
 
     if ($response === NULL) {
       $this->logger->notice(
-        'Unable to upsert node @id to vector database. Response not successful',
+        'Unable to upsert node @id to vector database. Response not successful. Check the Azure embedding service URL.',
         ['@id' => $entity->id()]
       );
       return NULL;
@@ -422,6 +429,8 @@ class EntityUpdate {
    *   An array of route parameters.
    * @param string $data
    *   The data to send to the AI Embedding service.
+   * @param string $doctype
+   *   The type of document being sent to the AI Embedding service.
    *
    * @return array
    *   An array of data to send to the AI Embedding service.
