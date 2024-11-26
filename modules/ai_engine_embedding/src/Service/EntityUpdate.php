@@ -248,7 +248,7 @@ class EntityUpdate {
 
     if ($response === NULL) {
       $this->logger->notice(
-        'Unable to upsert node @id to vector database. Response not successful',
+        'Unable to upsert node @id to vector database. Response not successful.  Could the azure embedding service URL be incorrect?',
         ['@id' => $entity->id()]
       );
       return NULL;
