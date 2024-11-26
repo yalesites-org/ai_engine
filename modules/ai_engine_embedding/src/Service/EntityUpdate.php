@@ -429,6 +429,8 @@ class EntityUpdate {
    *   An array of route parameters.
    * @param string $data
    *   The data to send to the AI Embedding service.
+   * @param string $doctype
+   *   The type of document being sent to the AI Embedding service.
    *
    * @return array
    *   An array of data to send to the AI Embedding service.
