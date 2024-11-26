@@ -171,7 +171,7 @@ class EntityUpdate {
       $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
       $response = $this->sendJsonPost($endpoint, $data);
 
-      if (!response) {
+      if (!$response) {
         $this->logger->notice(
           'Unable to upsert to vector database. Response not successful.',
         );
