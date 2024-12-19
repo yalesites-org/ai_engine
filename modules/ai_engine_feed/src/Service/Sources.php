@@ -240,6 +240,7 @@ class Sources {
       $query->condition($andCondition);
     }
     elseif ($entityType === "media") {
+      $this->logger->error('The metatags field is not set in the AI Engine Feed settings.  Since media by default is not indexed, no media will be indexed.  Set metatag field to properly enable this.');
       return [];
     }
 
