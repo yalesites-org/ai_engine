@@ -239,6 +239,9 @@ class Sources {
         ->condition($metatags_field, NULL, 'IS NULL');
       $query->condition($andCondition);
     }
+    elseif ($entityType === "media") {
+      return [];
+    }
 
     return $query->execute();
   }
