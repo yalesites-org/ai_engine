@@ -219,6 +219,13 @@ class Sources {
       ->condition('status', NodeInterface::PUBLISHED)
       ->accessCheck(TRUE);
 
+    // For media, make sure we only pull those they chose to include.
+    // This should probably be extracted and injected.
+    if ($entityType === 'media') {
+      $allowedBundles = $this->configFactory->get('ai_engine_embedding.settings')->get('included_media_types');
+      $query->condition('bundle', $allowedBundles, 'IN');
+    }
+
     // Optionally page results.
     if ($pager) {
       $page = $params['page'] ?? 1;
