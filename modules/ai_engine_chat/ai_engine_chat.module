@@ -52,3 +52,11 @@ function ai_engine_chat_page_bottom(array &$page_bottom) {
     ];
   }
 }
+
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function ai_engine_chat_preprocess_page(&$variables) {
+  $config = \Drupal::config('ai_engine_chat.settings');
+  \Drupal::service('renderer')->addCacheableDependency($variables, $config);
+}
