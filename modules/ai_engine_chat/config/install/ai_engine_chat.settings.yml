@@ -1,5 +1,6 @@
 enable: false
 floating_button: false
+floating_button_text: 'Ask Yale Chat'
 azure_base_url: ''
 initial_questions: []
 disclaimer: ''
