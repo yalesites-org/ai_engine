@@ -5,6 +5,17 @@
  * Contains ai_engine_chat.module functions.
  */
 
+ /**
+  * Implements hook_theme().
+  */
+function ai_engine_chat_theme() {
+  return [
+    'ai_engine_chat_button' => [
+      'variables' => [],
+    ],
+  ];
+}
+
 /**
  * Implements hook_page_attachments_alter().
  */
@@ -21,5 +32,17 @@ function ai_engine_chat_page_attachments_alter(array &$attachments) {
       'footer' => $config->get('footer'),
     ];
     $attachments['#attached']['library'][] = 'ai_engine_chat/chat_widget';
+  }
+}
+
+/**
+ * Implements hook_page_bottom().
+ */
+function ai_engine_chat_page_bottom(array &$page_bottom) {
+  $config = \Drupal::config('ai_engine_chat.settings');
+  if ($config->get('floating_button')) {
+    $page_bottom[] = [
+      '#theme' => 'ai_engine_chat_button',
+    ];
   }
 }

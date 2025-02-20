@@ -1,4 +1,5 @@
 enable: false
+floating_button: false
 azure_base_url: ''
 initial_questions: []
 disclaimer: ''
