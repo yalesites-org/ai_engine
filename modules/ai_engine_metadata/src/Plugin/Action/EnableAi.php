@@ -32,12 +32,12 @@ class EnableAi extends MetatagValueSetAction {
   /**
    * {@inheritdoc}
    */
-  protected static $entityMetatagFieldName = 'ai_disable_indexing';
+  protected static $entityMetatagFieldName = 'field_metatags';
 
   /**
    * {@inheritdoc}
    */
-  protected static $metatagFieldName = 'field_metatags';
+  protected static $metatagFieldName = 'ai_disable_indexing';
 
   /**
    * {@inheritdoc}
