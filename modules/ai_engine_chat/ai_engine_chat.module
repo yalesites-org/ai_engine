@@ -45,7 +45,11 @@ function ai_engine_chat_page_bottom(array &$page_bottom) {
   $current_theme = \Drupal::theme()->getActiveTheme()->getName();
   $frontend_theme = \Drupal::config('system.theme')->get('default');
 
-  if ($config->get('floating_button') && $current_theme === $frontend_theme) {
+  if (
+    $config->get('floating_button')
+    && $config->get('enable')
+    && $current_theme === $frontend_theme
+    ) {
     $page_bottom[] = [
       '#theme' => 'ai_engine_chat_button',
       '#button_text' => $config->get('floating_button_text'),
