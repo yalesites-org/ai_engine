@@ -1,4 +1,36 @@
 .ai-engine-chat-button {
   position: fixed;
-  bottom: 1rem;
+  bottom: 28.43px;
+  right: 28.43px;
+  z-index: 1000;
+
+  a {
+    color: #E5EFEC;
+    background-color: #00356B;
+    padding: 1em;
+    border-radius: 0 30px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: all 200ms ease-in-out;
+
+    &:focus,
+    &:hover {
+      color: #ffffff;
+      background-color: #286DC0;
+      outline-color: #286DC0;
+    }
+  }
+
+  svg {
+    margin-right: 0.25em;
+    font-size: 3.15rem;
+    width: 3.75rem;
+  }
+
+  span {
+    max-width: 5rem;
+    line-height: 1.4;
+  }
 }
