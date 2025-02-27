@@ -1,7 +1,7 @@
 .ai-engine-chat-button {
   position: fixed;
-  bottom: 28.43px;
-  right: 28.43px;
+  bottom: 1rem;
+  right: 1%;
   z-index: 1000;
 
   a {
@@ -33,4 +33,8 @@
     max-width: 5rem;
     line-height: 1.4;
   }
+}
+
+body:has(.ed11y-element) .ai-engine-chat-button {
+  bottom: calc(1% + 60px);
 }
