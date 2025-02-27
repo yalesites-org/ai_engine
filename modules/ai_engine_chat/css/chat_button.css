@@ -14,7 +14,7 @@
     text-decoration: none;
     font-size: 1rem;
     transition: all 200ms ease-in-out;
-    border: 1.25rem solid #e5efec;
+    border: 0.125rem solid #e5efec;
 
     &:focus,
     &:hover {
