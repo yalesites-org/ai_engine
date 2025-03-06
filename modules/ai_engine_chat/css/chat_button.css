@@ -1,0 +1,41 @@
+.ai-engine-chat-button {
+  position: fixed;
+  bottom: 1rem;
+  right: 1%;
+  z-index: 1000;
+
+  a {
+    color: #e5efec;
+    background-color: #00356B;
+    padding: 1em;
+    border-radius: 0 30px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: all 200ms ease-in-out;
+    border: 0.125rem solid #e5efec;
+
+    &:focus,
+    &:hover {
+      color: #ffffff;
+      background-color: #286DC0;
+      outline-color: #286DC0;
+    }
+  }
+
+  svg {
+    margin-right: 0.25em;
+    font-size: 3.15rem;
+    width: 3.75rem;
+  }
+
+  span {
+    max-width: 5rem;
+    line-height: 1.4;
+  }
+}
+
+body:has(.ed11y-element) .ai-engine-chat-button {
+  bottom: calc(1% + 60px);
+}

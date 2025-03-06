@@ -6,10 +6,23 @@
  */
 
 /**
+ * Implements hook_theme().
+ */
+function ai_engine_chat_theme() {
+  return [
+    'ai_engine_chat_button' => [
+      'variables' => [
+        'button_text' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
  * Implements hook_page_attachments_alter().
  */
 function ai_engine_chat_page_attachments_alter(array &$attachments) {
-  // If the chat widget is enbabled, then attach the React app and related
+  // If the chat widget is enabled, then attach the React app and related
   // content to all pages and pass configuration via drupalSettings.
   $config = \Drupal::config('ai_engine_chat.settings');
   if ($config->get('enable')) {
@@ -22,4 +35,32 @@ function ai_engine_chat_page_attachments_alter(array &$attachments) {
     ];
     $attachments['#attached']['library'][] = 'ai_engine_chat/chat_widget';
   }
+}
+
+/**
+ * Implements hook_page_bottom().
+ */
+function ai_engine_chat_page_bottom(array &$page_bottom) {
+  $config = \Drupal::config('ai_engine_chat.settings');
+  $current_theme = \Drupal::theme()->getActiveTheme()->getName();
+  $frontend_theme = \Drupal::config('system.theme')->get('default');
+
+  if (
+    $config->get('floating_button')
+    && $config->get('enable')
+    && $current_theme === $frontend_theme
+    ) {
+    $page_bottom[] = [
+      '#theme' => 'ai_engine_chat_button',
+      '#button_text' => $config->get('floating_button_text'),
+    ];
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function ai_engine_chat_preprocess_page(&$variables) {
+  $config = \Drupal::config('ai_engine_chat.settings');
+  \Drupal::service('renderer')->addCacheableDependency($variables, $config);
 }
