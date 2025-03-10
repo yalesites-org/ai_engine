@@ -31,7 +31,7 @@ class MetatagValueSetAction extends ActionBase implements ContainerFactoryPlugin
   protected static $entityMetatagFieldName;
 
   /**
-   * The name of the metatag field to update.
+   * The name of the metatag field inside the entity field to update.
    *
    * @var string
    */
@@ -115,10 +115,10 @@ class MetatagValueSetAction extends ActionBase implements ContainerFactoryPlugin
     }
 
     if ($entity->hasField(static::$entityMetatagFieldName)) {
-      $metaTagsArray = json_decode($entity->field_metatags->value ?? "{}", TRUE);
+      $metaTagsArray = json_decode($entity->get(static::$entityMetatagFieldName)->value ?? "{}", TRUE);
       $metaTagsArray[static::$metatagFieldName] = static::$actionValue;
       $metaTagsJson = json_encode($metaTagsArray);
-      $entity->field_metatags->value = $metaTagsJson;
+      $entity->get(static::$entityMetatagFieldName)->value = $metaTagsJson;
       $entity->save();
     }
   }
