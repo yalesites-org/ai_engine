@@ -7,6 +7,7 @@
  */
 document.addEventListener("DOMContentLoaded", function () {
   var launchLinks = document.querySelectorAll('a[href="#launch-chat"]');
+  var tries = 0;
 
   launchLinks.forEach(function (link) {
     link.classList.add("ai-chatbot");
@@ -17,7 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   if (window.location.hash === "#launch-chat") {
-    setTimeout(triggerChatLaunch, 0);
+    setTimeout(triggerChatLaunch, 1);
   }
 
   function triggerChatLaunch() {
@@ -25,6 +26,15 @@ document.addEventListener("DOMContentLoaded", function () {
     var launchButton = document.getElementById("launch-chat-modal");
     if (launchButton) {
       launchButton.click();
+    }
+    else if (tries < 3) {
+      tries += 1;
+      console.log("Retrying to find the launch button...");
+      console.log("Try number: " + tries);
+      setTimeout(triggerChatLaunch, 1000);
+    }
+    else {
+      console.error("Launch button not found after 3 attempts.");
     }
   }
 });
