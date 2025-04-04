@@ -7,15 +7,24 @@
  */
 document.addEventListener("DOMContentLoaded", function () {
   var launchLinks = document.querySelectorAll('a[href="#launch-chat"]');
+
   launchLinks.forEach(function (link) {
     link.classList.add("ai-chatbot");
     link.addEventListener("click", function (event) {
       event.preventDefault();
-      // Trigger a click on the button with id "launch-chat-modal".
-      var launchButton = document.getElementById("launch-chat-modal");
-      if (launchButton) {
-        launchButton.click();
-      }
+      triggerChatLaunch();
     });
   });
+
+  if (window.location.hash === "#launch-chat") {
+    setTimeout(triggerChatLaunch, 0);
+  }
+
+  function triggerChatLaunch() {
+    // Trigger a click on the button with id "launch-chat-modal".
+    var launchButton = document.getElementById("launch-chat-modal");
+    if (launchButton) {
+      launchButton.click();
+    }
+  }
 });
