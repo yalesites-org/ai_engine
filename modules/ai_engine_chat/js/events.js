@@ -6,6 +6,8 @@
  * and open the modal chat window.
  */
 document.addEventListener("DOMContentLoaded", function () {
+  const debug = false;
+
   var launchLinks = document.querySelectorAll('a[href="#launch-chat"]');
   var tries = 0;
 
@@ -29,8 +31,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     else if (tries < 3) {
       tries += 1;
-      console.log("Retrying to find the launch button...");
-      console.log("Try number: " + tries);
+      if (debug) {
+        console.log("Retrying to find the launch button...");
+        console.log("Try number: " + tries);
+      }
       setTimeout(triggerChatLaunch, 1000);
     }
     else {
