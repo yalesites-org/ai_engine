@@ -242,7 +242,7 @@ class Sources {
     $metatags_field = $this->configFactory->get(self::CONFIG_NAME)->get('metatags_field');
     if (!empty($metatags_field)) {
       $andCondition = $query->orConditionGroup()
-        ->condition($metatags_field, '%ai_disable_indexing%', 'NOT LIKE')
+        ->condition($metatags_field, '%ai_disable_indexing":"disabled%', 'NOT LIKE')
         ->condition($metatags_field, NULL, 'IS NULL');
       $query->condition($andCondition);
     }

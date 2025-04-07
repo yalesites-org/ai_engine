@@ -136,13 +136,15 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
       $azure_chunk_size = EntityUpdate::CHUNK_SIZE_DEFAULT;
     }
 
+    $included_media_types = $form_state->getValue('included_media_types');
+
     $this->config(self::CONFIG_NAME)
       ->set('enable', $form_state->getValue('enable'))
       ->set('azure_search_service_name', $form_state->getValue('azure_search_service_name'))
       ->set('azure_search_service_index', $form_state->getValue('azure_search_service_index'))
       ->set('azure_embedding_service_url', $form_state->getValue('azure_embedding_service_url'))
       ->set('azure_chunk_size', $azure_chunk_size)
-      ->set('included_media_types', $form_state->getValue('included_media_types'))
+      ->set('included_media_types', $included_media_types)
       ->save();
     parent::submitForm($form, $form_state);
   }
@@ -151,6 +153,16 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function actionUpsertAllDocuments(array &$form, FormStateInterface $form_state) {
+    $media_types = $form_state->getValue('included_media_types');
+
+    $default = 'disabled';
+    // For each media type selected, set the defaults for unset content.
+    foreach (array_keys($media_types) as $media_type) {
+      if (isset($media_types[$media_type]) && $media_types[$media_type] != 0) {
+        $this->setDeafultsForUnsetContent($media_type, $default);
+      }
+    }
+
     $service = \Drupal::service('ai_engine_embedding.entity_update');
     $service->addAllDocuments();
   }
@@ -171,6 +183,50 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
     asort($media_types);
 
     return $media_types;
+  }
+
+  /**
+   * Sets the defaults for unset content.
+   *
+   * If a media type is selected, make sure each current item
+   * that doesn't have metadata set has it set to enabled or disabled.
+   *
+   * @param string $media_type
+   *   The media type to check.
+   * @param string $default
+   *   The default value to set if metadata is not set.
+   *
+   * @return void
+   *   No return value.
+   */
+  protected function setDeafultsForUnsetContent($media_type, $default) {
+    $mediaStorage = $this->entityTypeManager->getStorage('media');
+    // Get all media matching those types.
+    $media = $mediaStorage->loadByProperties([
+      'bundle' => [$media_type],
+    ]);
+
+    // Loop through each media item and check if it has metatags set.
+    foreach ($media as $item) {
+      // Check if the metatags is set.
+      $metatags = $item->get('field_metatags')->getValue();
+      if (empty($metatags)) {
+        $metatags = ['ai_disable_indexing' => $default];
+        $item->set('field_metatags', [
+          'value' => $metatags,
+        ]);
+        $mediaStorage->save($item);
+      }
+      else {
+        $metatags_array = json_decode($metatags[0]['value']);
+        if (empty($media_array->ai_disable_indexing)) {
+          $metatags_array->ai_disable_indexing = $default;
+          $metatags[0]['value'] = $metatags_array;
+          $item->set('field_metatags', $metatags);
+          $mediaStorage->save($item);
+        }
+      }
+    }
   }
 
 }

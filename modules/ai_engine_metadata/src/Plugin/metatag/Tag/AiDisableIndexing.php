@@ -29,10 +29,9 @@ class AiDisableIndexing extends MetaNameBase {
       '#type' => 'checkbox',
       '#title' => $this->label(),
       '#description' => $this->description(),
-      '#default_value' => ($this->value === 'disabled') ?: '',
+      '#default_value' => ($this->value === 'disabled') ? 1 : 0,
       '#required' => $element['#required'] ?? FALSE,
       '#element_validate' => [[get_class($this), 'validateTag']],
-      '#return_value' => 'disabled',
     ];
 
     return $form;
@@ -57,6 +56,20 @@ class AiDisableIndexing extends MetaNameBase {
    */
   public function getTestOutputValuesXpath(array $values): array {
     return ["//" . $this->htmlTag . "[@" . $this->htmlNameAttribute . "='{$this->name}' and @content='disabled']"];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setValue($value): void {
+    if ($value == "1") {
+      $value = 'disabled';
+    }
+    elseif ($value == "0") {
+      $value = 'enabled';
+    }
+
+    parent::setValue($value);
   }
 
 }
