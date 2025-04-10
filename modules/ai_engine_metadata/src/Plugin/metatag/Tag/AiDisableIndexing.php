@@ -25,13 +25,25 @@ class AiDisableIndexing extends MetaNameBase {
    * {@inheritdoc}
    */
   public function form(array $element = []): array {
+    // There should always be a value here.
+    // But old entities might not have it set.
+    // So we need to set it to the default value.
+    if ($this->value == NULL) {
+      $this->value = $this->getDefaultValueForEntityType();
+    }
+
+    $checked = $this->value === 'disabled';
+
     $form = [
       '#type' => 'checkbox',
       '#title' => $this->label(),
       '#description' => $this->description(),
-      '#default_value' => ($this->value === 'disabled') ? 1 : 0,
+      '#default_value' => 'disabled',
       '#required' => $element['#required'] ?? FALSE,
       '#element_validate' => [[get_class($this), 'validateTag']],
+      '#attributes' => [
+        'checked' => $checked ? 'checked' : NULL,
+      ],
     ];
 
     return $form;
@@ -70,6 +82,24 @@ class AiDisableIndexing extends MetaNameBase {
     }
 
     parent::setValue($value);
+  }
+
+  /**
+   *
+   */
+  protected function getDefaultValueForEntityType(): string {
+    $request = $this->request;
+    // Get the attributes.
+    $entity_type_id = $request->attributes->get('entity_type_id') ?? '';
+
+    // If it's a media type, then it's $this->value or disabled.
+    // Otherwise, it's $this->value or enabled.
+    if ($entity_type_id === 'media') {
+      return 'disabled';
+    }
+    else {
+      return 'enabled';
+    }
   }
 
 }
