@@ -219,6 +219,13 @@ class Sources {
       ->condition('status', NodeInterface::PUBLISHED)
       ->accessCheck(TRUE);
 
+    // For media, make sure we only pull those they chose to include.
+    // This should probably be extracted and injected.
+    if ($entityType === 'media') {
+      $allowedBundles = $this->configFactory->get('ai_engine_embedding.settings')->get('included_media_types') ?? [''];
+      $query->condition('bundle', $allowedBundles, 'IN');
+    }
+
     // Optionally page results.
     if ($pager) {
       $page = $params['page'] ?? 1;
@@ -235,7 +242,7 @@ class Sources {
     $metatags_field = $this->configFactory->get(self::CONFIG_NAME)->get('metatags_field');
     if (!empty($metatags_field)) {
       $andCondition = $query->orConditionGroup()
-        ->condition($metatags_field, '%ai_disable_indexing%', 'NOT LIKE')
+        ->condition($metatags_field, '%ai_disable_indexing":"disabled%', 'NOT LIKE')
         ->condition($metatags_field, NULL, 'IS NULL');
       $query->condition($andCondition);
     }
