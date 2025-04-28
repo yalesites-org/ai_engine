@@ -31,10 +31,10 @@ const Modal = ({ show, close, children, header, footer, variant}: ModalProps) =>
           lastFocusableElement.current = elements ? elements[elements.length - 1] as HTMLElement : null;
         }
 
-        if (e.shiftKey && focusedElement?.isSameNode(firstFocusableElement.current)) {
+        if (e.shiftKey && focusedElement === null) {
           e.preventDefault();
           lastFocusableElement.current?.focus();
-        } else if (!e.shiftKey && focusedElement?.isSameNode(lastFocusableElement.current)) {
+        } else if (!e.shiftKey && focusedElement === null) {
           e.preventDefault();
           firstFocusableElement.current?.focus();
         }
