@@ -25,18 +25,21 @@ const Modal = ({ show, close, children, header, footer, variant}: ModalProps) =>
       setTimeout(() => {
         const focusedElement = modalRef.current?.querySelector(':focus');
 
+        const elements = modalRef.current?.querySelectorAll('button:not([aria-disabled="true"]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"]');
         if (modalRef.current?.getAttribute('modal-is-open') === 'true') {
-          const elements = modalRef.current?.querySelectorAll('button:not([aria-disabled="true"]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"]');
           firstFocusableElement.current = elements ? elements[0] as HTMLElement : null;
           lastFocusableElement.current = elements ? elements[elements.length - 1] as HTMLElement : null;
         }
 
-        if (e.shiftKey && focusedElement === null) {
-          e.preventDefault();
-          lastFocusableElement.current?.focus();
-        } else if (!e.shiftKey && focusedElement === null) {
-          e.preventDefault();
-          firstFocusableElement.current?.focus();
+        const isElementInModal = Array.from(elements || []).some((element) => element === focusedElement);
+
+        if (!isElementInModal) {
+          if (e.shiftKey) {
+            lastFocusableElement.current?.focus();
+          }
+          else {
+            firstFocusableElement.current?.focus();
+          }
         }
       }, 1);
     }
