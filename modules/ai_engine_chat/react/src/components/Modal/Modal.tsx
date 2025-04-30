@@ -19,33 +19,31 @@ const Modal = ({ show, close, children, header, footer, variant}: ModalProps) =>
   const modalRef = useRef<HTMLDivElement>(null);
   const firstFocusableElement = useRef<HTMLElement | null>(null);
   const lastFocusableElement = useRef<HTMLElement | null>(null);
+  const firstPlaceholderElement = useRef<HTMLElement | null>(null);
+  const lastPlaceholderElement = useRef<HTMLElement | null>(null);
 
-  document.addEventListener('keydown', function(event) {
-    const focusedElement = document.activeElement;
-    //Check if the pressed key is tab
-    if (event.key === 'Tab') {
-      // Perform actions with the previously focused element
-      console.log('Previously focused element:', focusedElement);
-    }
-  });
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Tab' && modalRef.current) {
       setTimeout(() => {
-        const focusedElement = document.activeElement;
-        const elements = modalRef.current?.querySelectorAll('button:not([aria-disabled="true"]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"]');
-
-        const focusedElementInElements = Array.from(elements || []).find((element) => element === focusedElement);
+        const focusedElement = modalRef.current?.querySelector(':focus');
 
         if (modalRef.current?.getAttribute('modal-is-open') === 'true') {
-          firstFocusableElement.current = elements ? elements[0] as HTMLElement : null;
-          lastFocusableElement.current = elements ? elements[elements.length - 1] as HTMLElement : null;
+          const elements = modalRef.current?.querySelectorAll('button:not([aria-disabled="true"],[disabled="true"]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"]');
+          firstPlaceholderElement.current = elements ? elements[0] as HTMLElement : null;
+          firstFocusableElement.current = elements ? elements[1] as HTMLElement : null;
+          lastPlaceholderElement.current = elements ? elements[elements.length - 1] as HTMLElement : null;
+          lastFocusableElement.current = elements ? elements[elements.length - 2] as HTMLElement : null;
         }
 
-        if (e.shiftKey && !focusedElementInElements) {
+        const isFocusedElementADiv = focusedElement?.tagName === 'DIV' && focusedElement?.getAttribute('class') === 'tabOver';
+
+        if (e.shiftKey && (focusedElement?.isSameNode(firstPlaceholderElement.current) || isFocusedElementADiv)) {
           e.preventDefault();
+          console.log("selecting last element", lastFocusableElement.current);
           lastFocusableElement.current?.focus();
-        } else if (!e.shiftKey && !focusedElementInElements) {
+        } else if (!e.shiftKey && (focusedElement?.isSameNode(lastPlaceholderElement.current) || isFocusedElementADiv)) {
           e.preventDefault();
+          console.log("selecting first element", firstFocusableElement.current);
           firstFocusableElement.current?.focus();
         }
       }, 1);
@@ -90,6 +88,7 @@ const Modal = ({ show, close, children, header, footer, variant}: ModalProps) =>
               <Stack horizontal verticalAlign="center" horizontalAlign="space-between" className={styles.modalHeaderContainer}>
                 {header}
                 <Stack horizontal>
+                  <div tabindex="0" class="tabOver"></div>
                   <button className={styles.closeButton} onClick={handleClose} aria-label="Close modal">
                     <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                       <path d="M15.1719 2.42188L9.54688 8.04688L15.125 13.625C15.5938 14.0469 15.5938 14.75 15.125 15.1719C14.7031 15.6406 14 15.6406 13.5781 15.1719L7.95312 9.59375L2.375 15.1719C1.95312 15.6406 1.25 15.6406 0.828125 15.1719C0.359375 14.75 0.359375 14.0469 0.828125 13.5781L6.40625 8L0.828125 2.42188C0.359375 2 0.359375 1.29688 0.828125 0.828125C1.25 0.40625 1.95312 0.40625 2.42188 0.828125L8 6.45312L13.5781 0.875C14 0.40625 14.7031 0.40625 15.1719 0.875C15.5938 1.29688 15.5938 2 15.1719 2.42188Z" />
@@ -107,6 +106,7 @@ const Modal = ({ show, close, children, header, footer, variant}: ModalProps) =>
                 </div>
               )}
             </main>
+            <div tabindex="0" class="tabOver"></div>
           </motion.div>
         </section>
       </div>
