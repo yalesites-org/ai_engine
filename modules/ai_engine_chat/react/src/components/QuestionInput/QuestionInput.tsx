@@ -72,6 +72,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
                 onClick={sendQuestion}
                 onKeyDown={e => e.key === "Enter" || e.key === " " ? sendQuestion() : null}
                 aria-disabled= {sendQuestionDisabled}
+                disabled= {sendQuestionDisabled}
             >
                 { sendQuestionDisabled ?
                     <span className={styles.questionInputSendButtonDisabled}>
