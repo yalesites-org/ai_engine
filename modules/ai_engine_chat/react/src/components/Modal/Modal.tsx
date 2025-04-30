@@ -20,21 +20,31 @@ const Modal = ({ show, close, children, header, footer, variant}: ModalProps) =>
   const firstFocusableElement = useRef<HTMLElement | null>(null);
   const lastFocusableElement = useRef<HTMLElement | null>(null);
 
+  document.addEventListener('keydown', function(event) {
+    const focusedElement = document.activeElement;
+    //Check if the pressed key is tab
+    if (event.key === 'Tab') {
+      // Perform actions with the previously focused element
+      console.log('Previously focused element:', focusedElement);
+    }
+  });
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Tab' && modalRef.current) {
       setTimeout(() => {
-        const focusedElement = modalRef.current?.querySelector(':focus');
+        const focusedElement = document.activeElement;
+        const elements = modalRef.current?.querySelectorAll('button:not([aria-disabled="true"]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"]');
+
+        const focusedElementInElements = Array.from(elements || []).find((element) => element === focusedElement);
 
         if (modalRef.current?.getAttribute('modal-is-open') === 'true') {
-          const elements = modalRef.current?.querySelectorAll('button:not([aria-disabled="true"]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"]');
           firstFocusableElement.current = elements ? elements[0] as HTMLElement : null;
           lastFocusableElement.current = elements ? elements[elements.length - 1] as HTMLElement : null;
         }
 
-        if (e.shiftKey && focusedElement?.isSameNode(firstFocusableElement.current)) {
+        if (e.shiftKey && !focusedElementInElements) {
           e.preventDefault();
           lastFocusableElement.current?.focus();
-        } else if (!e.shiftKey && focusedElement?.isSameNode(lastFocusableElement.current)) {
+        } else if (!e.shiftKey && !focusedElementInElements) {
           e.preventDefault();
           firstFocusableElement.current?.focus();
         }
