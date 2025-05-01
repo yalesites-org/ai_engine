@@ -88,7 +88,7 @@ const Modal = ({ show, close, children, header, footer, variant}: ModalProps) =>
               <Stack horizontal verticalAlign="center" horizontalAlign="space-between" className={styles.modalHeaderContainer}>
                 {header}
                 <Stack horizontal>
-                  <div tabindex="0" class="tabOver"></div>
+                  <div tabIndex={0} className="tabOver"></div>
                   <button className={styles.closeButton} onClick={handleClose} aria-label="Close modal">
                     <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                       <path d="M15.1719 2.42188L9.54688 8.04688L15.125 13.625C15.5938 14.0469 15.5938 14.75 15.125 15.1719C14.7031 15.6406 14 15.6406 13.5781 15.1719L7.95312 9.59375L2.375 15.1719C1.95312 15.6406 1.25 15.6406 0.828125 15.1719C0.359375 14.75 0.359375 14.0469 0.828125 13.5781L6.40625 8L0.828125 2.42188C0.359375 2 0.359375 1.29688 0.828125 0.828125C1.25 0.40625 1.95312 0.40625 2.42188 0.828125L8 6.45312L13.5781 0.875C14 0.40625 14.7031 0.40625 15.1719 0.875C15.5938 1.29688 15.5938 2 15.1719 2.42188Z" />
@@ -106,7 +106,7 @@ const Modal = ({ show, close, children, header, footer, variant}: ModalProps) =>
                 </div>
               )}
             </main>
-            <div tabindex="0" class="tabOver"></div>
+            <div tabIndex={0} className="tabOver"></div>
           </motion.div>
         </section>
       </div>
