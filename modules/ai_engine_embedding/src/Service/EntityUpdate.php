@@ -22,6 +22,17 @@ class EntityUpdate {
   const CHUNK_SIZE_DEFAULT = 3000;
 
   /**
+   * The default chunking strategy for the AI Embedding service.
+   *
+   * @var string
+   */
+  const CHUNKING_STRATEGY_DEFAULT = 'text';
+  const CHUNKING_OUTPUT_STRATEGY_OPTIONS = [
+    self::CHUNKING_STRATEGY_DEFAULT => 'Text',
+    'md' => 'Markdown',
+  ];
+
+  /**
    * The allowed entity types for indexing.
    *
    * @var array
