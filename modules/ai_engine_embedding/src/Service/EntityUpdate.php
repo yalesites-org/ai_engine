@@ -173,8 +173,8 @@ class EntityUpdate {
    * a cleanup routine to find and delete out of date chunks.
    */
   public function addAllDocuments() {
-    $docType = "text";
     $config = $this->configFactory->get('ai_engine_embedding.settings');
+    $docType = $config->get('chunking_output_strategy');
 
     // Loop through entityTypesToSend and send.
     foreach (self::ALLOWED_ENTITIES as $entityType) {
@@ -456,7 +456,7 @@ class EntityUpdate {
       throw new \Exception('Invalid action provided.');
     }
 
-    $allowed_doctypes = ['text', 'media'];
+    $allowed_doctypes = ['text', 'md'];
 
     if (!in_array($doctype, $allowed_doctypes)) {
       throw new \Exception('Invalid doctype provided.');
