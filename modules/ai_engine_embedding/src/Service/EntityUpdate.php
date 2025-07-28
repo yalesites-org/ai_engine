@@ -30,6 +30,7 @@ class EntityUpdate {
   const CHUNKING_OUTPUT_STRATEGY_OPTIONS = [
     self::CHUNKING_STRATEGY_DEFAULT => 'Text',
     'md' => 'Markdown',
+    'mdh' => 'Markdown Headers',
   ];
 
   /**
@@ -456,7 +457,7 @@ class EntityUpdate {
       throw new \Exception('Invalid action provided.');
     }
 
-    $allowed_doctypes = ['text', 'md'];
+    $allowed_doctypes = ['text', 'md', 'mdh'];
 
     if (!in_array($doctype, $allowed_doctypes)) {
       throw new \Exception('Invalid doctype provided.');
