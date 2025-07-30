@@ -91,6 +91,13 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
       '#description' => $this->t('The chunk size to split each document into'),
       '#default_value' => $config->get('azure_chunk_size') ?? 3000,
     ];
+    $form['chunking_output_strategy'] = [
+      '#type' => 'select',
+      '#title' => $this->t("Chunking Output Strategy"),
+      '#options' => EntityUpdate::CHUNKING_OUTPUT_STRATEGY_OPTIONS,
+      '#description' => $this->t('The strategy to use for chunking documents.'),
+      '#default_value' => $config->get('chunking_output_strategy') ?? EntityUpdate::CHUNKING_STRATEGY_DEFAULT,
+    ];
     $form['included_media_types'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('Included Media Types'),
@@ -145,6 +152,7 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
       ->set('azure_embedding_service_url', $form_state->getValue('azure_embedding_service_url'))
       ->set('azure_chunk_size', $azure_chunk_size)
       ->set('included_media_types', $included_media_types)
+      ->set('chunking_output_strategy', $form_state->getValue('chunking_output_strategy'))
       ->save();
     parent::submitForm($form, $form_state);
   }
