@@ -15,7 +15,7 @@ export const XSSAllowTags = [
   'small',
   'del',
   'img',
-  'picture',
+  'pictrue',
   'embed',
   'video',
   'audio',
@@ -37,7 +37,7 @@ export const XSSAllowTags = [
   'th',
   'thead',
   'tbody',
-  'tfoot',
+  'tfooter',
   'ul',
   'ol',
   'li'
