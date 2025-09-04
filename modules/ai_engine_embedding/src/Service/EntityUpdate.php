@@ -175,7 +175,8 @@ class EntityUpdate {
    */
   public function addAllDocuments() {
     $config = $this->configFactory->get('ai_engine_embedding.settings');
-    $docType = $config->get('chunking_output_strategy');
+    $docType = $config->get('chunking_output_strategy') ??
+      self::CHUNKING_STRATEGY_DEFAULT;
 
     // Loop through entityTypesToSend and send.
     foreach (self::ALLOWED_ENTITIES as $entityType) {
