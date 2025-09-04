@@ -1,0 +1,241 @@
+<?php
+
+namespace Drupal\ai_engine_chat\Service;
+
+use Drupal\Core\Database\Connection;
+use Drupal\Core\Session\AccountProxyInterface;
+
+/**
+ * Service for managing system instructions storage and versioning.
+ */
+class SystemInstructionsStorageService {
+
+  /**
+   * The database connection.
+   *
+   * @var \Drupal\Core\Database\Connection
+   */
+  protected $database;
+
+  /**
+   * The current user.
+   *
+   * @var \Drupal\Core\Session\AccountProxyInterface
+   */
+  protected $currentUser;
+
+  /**
+   * The table name.
+   */
+  const TABLE_NAME = 'ai_engine_system_instructions';
+
+  /**
+   * Constructs a SystemInstructionsStorageService.
+   *
+   * @param \Drupal\Core\Database\Connection $database
+   *   The database connection.
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
+   *   The current user.
+   */
+  public function __construct(Connection $database, AccountProxyInterface $current_user) {
+    $this->database = $database;
+    $this->currentUser = $current_user;
+  }
+
+  /**
+   * Get the current active system instructions.
+   *
+   * @return array|null
+   *   Array with instruction data or NULL if none found.
+   */
+  public function getActiveInstructions(): ?array {
+    $query = $this->database->select(self::TABLE_NAME, 'si')
+      ->fields('si')
+      ->condition('is_active', 1)
+      ->range(0, 1);
+    
+    $result = $query->execute()->fetchAssoc();
+    
+    return $result ?: NULL;
+  }
+
+  /**
+   * Get all versions of system instructions.
+   *
+   * @return array
+   *   Array of instruction versions, ordered by version desc.
+   */
+  public function getAllVersions(): array {
+    $query = $this->database->select(self::TABLE_NAME, 'si')
+      ->fields('si')
+      ->orderBy('version', 'DESC');
+    
+    return $query->execute()->fetchAll(\PDO::FETCH_ASSOC);
+  }
+
+  /**
+   * Get a specific version of system instructions.
+   *
+   * @param int $version
+   *   The version number.
+   *
+   * @return array|null
+   *   Array with instruction data or NULL if not found.
+   */
+  public function getVersion(int $version): ?array {
+    $query = $this->database->select(self::TABLE_NAME, 'si')
+      ->fields('si')
+      ->condition('version', $version)
+      ->range(0, 1);
+    
+    $result = $query->execute()->fetchAssoc();
+    
+    return $result ?: NULL;
+  }
+
+  /**
+   * Create a new version of system instructions.
+   *
+   * @param string $instructions
+   *   The instructions content.
+   * @param string $notes
+   *   Optional notes about this version.
+   * @param int $created_by
+   *   User ID who created this version. Defaults to current user.
+   *
+   * @return int
+   *   The new version number.
+   */
+  public function createVersion(string $instructions, string $notes = '', int $created_by = NULL): int {
+    if ($created_by === NULL) {
+      $created_by = $this->currentUser->id();
+    }
+
+    // Get the next version number.
+    $next_version = $this->getNextVersionNumber();
+    
+    // Deactivate all existing versions.
+    $this->database->update(self::TABLE_NAME)
+      ->fields(['is_active' => 0])
+      ->condition('is_active', 1)
+      ->execute();
+
+    // Insert the new version.
+    $this->database->insert(self::TABLE_NAME)
+      ->fields([
+        'instructions' => $instructions,
+        'version' => $next_version,
+        'created_by' => $created_by,
+        'created_date' => \Drupal::time()->getRequestTime(),
+        'is_active' => 1,
+        'notes' => $notes,
+      ])
+      ->execute();
+
+    return $next_version;
+  }
+
+  /**
+   * Set a specific version as active.
+   *
+   * @param int $version
+   *   The version number to activate.
+   *
+   * @return bool
+   *   TRUE if successful, FALSE if version doesn't exist.
+   */
+  public function setActiveVersion(int $version): bool {
+    // Check if the version exists.
+    $existing = $this->getVersion($version);
+    if (!$existing) {
+      return FALSE;
+    }
+
+    // Deactivate all versions.
+    $this->database->update(self::TABLE_NAME)
+      ->fields(['is_active' => 0])
+      ->condition('is_active', 1)
+      ->execute();
+
+    // Activate the specified version.
+    $this->database->update(self::TABLE_NAME)
+      ->fields(['is_active' => 1])
+      ->condition('version', $version)
+      ->execute();
+
+    return TRUE;
+  }
+
+  /**
+   * Check if instructions are different from the current active version.
+   *
+   * @param string $instructions
+   *   The instructions to compare.
+   *
+   * @return bool
+   *   TRUE if different, FALSE if same.
+   */
+  public function areInstructionsDifferent(string $instructions): bool {
+    $active = $this->getActiveInstructions();
+    
+    if (!$active) {
+      // No active instructions, so these are different.
+      return TRUE;
+    }
+    
+    return trim($active['instructions']) !== trim($instructions);
+  }
+
+  /**
+   * Get the next version number.
+   *
+   * @return int
+   *   The next version number.
+   */
+  protected function getNextVersionNumber(): int {
+    $query = $this->database->select(self::TABLE_NAME, 'si');
+    $query->addExpression('MAX(version)', 'max_version');
+    
+    $result = $query->execute()->fetchField();
+    
+    return ($result ? (int) $result : 0) + 1;
+  }
+
+  /**
+   * Get version count.
+   *
+   * @return int
+   *   Total number of versions.
+   */
+  public function getVersionCount(): int {
+    return (int) $this->database->select(self::TABLE_NAME)
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+  }
+
+  /**
+   * Delete a specific version.
+   *
+   * @param int $version
+   *   The version number to delete.
+   *
+   * @return bool
+   *   TRUE if successful, FALSE if version doesn't exist or is active.
+   */
+  public function deleteVersion(int $version): bool {
+    $existing = $this->getVersion($version);
+    
+    if (!$existing || $existing['is_active']) {
+      // Can't delete non-existent or active versions.
+      return FALSE;
+    }
+
+    $this->database->delete(self::TABLE_NAME)
+      ->condition('version', $version)
+      ->execute();
+
+    return TRUE;
+  }
+
+}

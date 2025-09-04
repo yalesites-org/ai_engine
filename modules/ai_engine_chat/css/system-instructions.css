@@ -1,0 +1,62 @@
+/**
+ * @file
+ * Styles for the system instructions admin interface.
+ */
+
+.system-instructions-status {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+}
+
+.system-instructions-status .messages {
+  margin: 0;
+}
+
+.system-instructions-summary {
+  margin-bottom: 1.5rem;
+}
+
+.system-instructions-history {
+  margin-top: 1rem;
+}
+
+.system-instructions-history th,
+.system-instructions-history td {
+  padding: 0.75rem;
+  vertical-align: top;
+  border-top: 1px solid #dee2e6;
+}
+
+.system-instructions-version-header {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+}
+
+.character-count {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.character-count.warning {
+  color: #f39c12;
+}
+
+.character-count.error {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.form-textarea[data-maxlength].warning {
+  border-color: #f39c12;
+}
+
+.form-textarea[data-maxlength].error {
+  border-color: #e74c3c;
+}
