@@ -84,7 +84,7 @@ class AiEngineChatAdmin extends ConfigFormBase {
     $form['azure_base_url'] = [
       '#type' => 'url',
       '#title' => $this->t('Azure base URL'),
-      '#description' => $this->t('Ex: https://askyalehealth.azurewebsites.net'),
+      '#description' => $this->t('The base URL for your Azure deployment.'),
       '#default_value' => $config->get('azure_base_url') ?? NULL,
     ];
 
@@ -109,7 +109,7 @@ class AiEngineChatAdmin extends ConfigFormBase {
         '#type' => 'url',
         '#title' => $this->t('API Endpoint'),
         '#description' => $this->t('The URL endpoint for the system instructions API.'),
-        '#default_value' => $config->get('system_instructions_api_endpoint') ?? 'https://askyaleindexfunc.azurewebsites.net/api/webappenv',
+        '#default_value' => $config->get('system_instructions_api_endpoint'),
         '#states' => [
           'required' => [
             ':input[name="system_instructions_enabled"]' => ['checked' => TRUE],
