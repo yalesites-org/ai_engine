@@ -7,6 +7,23 @@
   'use strict';
 
   /**
+   * Auto-refresh behavior for loading state.
+   */
+  Drupal.behaviors.systemInstructionsAutoRefresh = {
+    attach: function (context, settings) {
+      if (settings.aiEngineSystemInstructions?.autoRefresh) {
+        // Auto-trigger the hidden refresh button after a short delay.
+        setTimeout(function() {
+          const refreshButton = document.getElementById('system-instructions-refresh-btn');
+          if (refreshButton) {
+            refreshButton.click();
+          }
+        }, 1000); // 1 second delay to show the spinner briefly
+      }
+    }
+  };
+
+  /**
    * Character counter behavior for system instructions textarea.
    */
   Drupal.behaviors.systemInstructionsCharacterCount = {

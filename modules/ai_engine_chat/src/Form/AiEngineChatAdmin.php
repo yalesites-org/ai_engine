@@ -88,7 +88,8 @@ class AiEngineChatAdmin extends ConfigFormBase {
       '#default_value' => $config->get('azure_base_url') ?? NULL,
     ];
 
-    // System Instructions API Settings (only visible to users with 'administer ai engine' permission).
+    // System Instructions API Settings (only visible to users with
+    // 'administer ai engine' permission).
     if ($this->currentUser()->hasPermission('administer ai engine')) {
       $form['system_instructions'] = [
         '#type' => 'details',
@@ -198,7 +199,7 @@ class AiEngineChatAdmin extends ConfigFormBase {
     // Save system instructions API settings if user has permission.
     if ($this->currentUser()->hasPermission('administer ai engine')) {
       $config->set('system_instructions_enabled', $form_state->getValue('system_instructions_enabled'));
-      
+
       // Only save the API settings if the feature is enabled.
       if ($form_state->getValue('system_instructions_enabled')) {
         $config

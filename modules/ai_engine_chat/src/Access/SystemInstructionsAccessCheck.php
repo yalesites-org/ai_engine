@@ -39,8 +39,8 @@ class SystemInstructionsAccessCheck implements AccessInterface {
    *   The access result.
    */
   public function access(AccountInterface $account) {
-    // Check if user has the required permission.
-    if (!$account->hasPermission('manage ai chat system instructions')) {
+    // Check if user has the required permission or is a site administrator.
+    if (!$account->hasPermission('manage ai chat system instructions') && !$account->hasPermission('administer site configuration')) {
       return AccessResult::forbidden('User lacks required permission.');
     }
 

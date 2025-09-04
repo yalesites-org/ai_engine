@@ -7,7 +7,6 @@ use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\key\KeyRepositoryInterface;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
-use Psr\Log\LoggerInterface;
 
 /**
  * Service for managing system instructions API calls.
@@ -99,7 +98,7 @@ class SystemInstructionsApiService {
       ]);
 
       $data = json_decode($response->getBody()->getContents(), TRUE);
-      
+
       if ($response->getStatusCode() === 200 && isset($data['AZURE_OPENAI_SYSTEM_MESSAGE'])) {
         return [
           'success' => TRUE,
@@ -107,7 +106,7 @@ class SystemInstructionsApiService {
           'error' => '',
         ];
       }
-      
+
       return [
         'success' => FALSE,
         'data' => '',
@@ -119,7 +118,7 @@ class SystemInstructionsApiService {
       $this->logger->error('Failed to get system instructions from API: @error', [
         '@error' => $e->getMessage(),
       ]);
-      
+
       return [
         'success' => FALSE,
         'data' => '',
@@ -170,7 +169,7 @@ class SystemInstructionsApiService {
           'error' => '',
         ];
       }
-      
+
       return [
         'success' => FALSE,
         'error' => 'API returned status code: ' . $response->getStatusCode(),
@@ -181,7 +180,7 @@ class SystemInstructionsApiService {
       $this->logger->error('Failed to set system instructions via API: @error', [
         '@error' => $e->getMessage(),
       ]);
-      
+
       return [
         'success' => FALSE,
         'error' => 'API request failed: ' . $e->getMessage(),
@@ -197,25 +196,25 @@ class SystemInstructionsApiService {
    */
   protected function getApiConfig(): ?array {
     $config = $this->configFactory->get('ai_engine_chat.settings');
-    
+
     // Check if the feature is enabled.
     if (!$config->get('system_instructions_enabled')) {
       return NULL;
     }
-    
+
     $api_endpoint = $config->get('system_instructions_api_endpoint');
     $web_app_name = $config->get('system_instructions_web_app_name');
     $api_key_name = $config->get('system_instructions_api_key');
-    
+
     if (!$api_endpoint || !$web_app_name || !$api_key_name) {
       return NULL;
     }
-    
+
     $api_key = $this->keyRepository->getKey($api_key_name)?->getKeyValue();
     if (!$api_key) {
       return NULL;
     }
-    
+
     return [
       'api_endpoint' => $api_endpoint,
       'web_app_name' => $web_app_name,

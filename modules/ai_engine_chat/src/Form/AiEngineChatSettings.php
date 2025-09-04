@@ -45,7 +45,7 @@ class AiEngineChatSettings extends ConfigFormBase {
     for ($i = 0; $i < 4; $i++) {
       $form['prompts'][$i] = [
         '#type' => 'textfield',
-        '#title' => $this->t('Prompt '),
+        '#title' => $this->t('Prompt'),
         '#default_value' => $config->get('prompts')[$i] ?? [],
       ];
     }

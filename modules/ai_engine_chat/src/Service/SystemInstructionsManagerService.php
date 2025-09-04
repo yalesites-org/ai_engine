@@ -2,12 +2,10 @@
 
 namespace Drupal\ai_engine_chat\Service;
 
-use Drupal\ai_engine_chat\Service\SystemInstructionsApiService;
-use Drupal\ai_engine_chat\Service\SystemInstructionsStorageService;
+use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\KeyValueStore\KeyValueFactoryInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Psr\Log\LoggerInterface;
 
 /**
  * Service for orchestrating system instructions management.
@@ -45,6 +43,13 @@ class SystemInstructionsManagerService {
   protected $keyValueStore;
 
   /**
+   * The time service.
+   *
+   * @var \Drupal\Component\Datetime\TimeInterface
+   */
+  protected $time;
+
+  /**
    * API sync cooldown period in seconds.
    */
   const API_SYNC_COOLDOWN = 10;
@@ -60,12 +65,15 @@ class SystemInstructionsManagerService {
    *   The logger factory.
    * @param \Drupal\Core\KeyValueStore\KeyValueFactoryInterface $key_value_factory
    *   The key-value store factory.
+   * @param \Drupal\Component\Datetime\TimeInterface $time
+   *   The time service.
    */
-  public function __construct(SystemInstructionsApiService $api_service, SystemInstructionsStorageService $storage_service, LoggerChannelFactoryInterface $logger_factory, KeyValueFactoryInterface $key_value_factory) {
+  public function __construct(SystemInstructionsApiService $api_service, SystemInstructionsStorageService $storage_service, LoggerChannelFactoryInterface $logger_factory, KeyValueFactoryInterface $key_value_factory, TimeInterface $time) {
     $this->apiService = $api_service;
     $this->storageService = $storage_service;
     $this->logger = $logger_factory->get('ai_engine_chat');
     $this->keyValueStore = $key_value_factory->get('ai_engine_chat_system_instructions');
+    $this->time = $time;
   }
 
   /**
@@ -85,7 +93,7 @@ class SystemInstructionsManagerService {
     // Check cooldown period unless forced.
     if (!$force) {
       $last_sync_time = $this->keyValueStore->get('last_api_sync_time', 0);
-      $current_time = \Drupal::time()->getRequestTime();
+      $current_time = $this->time->getRequestTime();
       $time_since_last_sync = $current_time - $last_sync_time;
 
       if ($time_since_last_sync < self::API_SYNC_COOLDOWN) {
@@ -101,10 +109,10 @@ class SystemInstructionsManagerService {
     }
 
     // Record the sync attempt time.
-    $this->keyValueStore->set('last_api_sync_time', \Drupal::time()->getRequestTime());
+    $this->keyValueStore->set('last_api_sync_time', $this->time->getRequestTime());
 
     $api_result = $this->apiService->getSystemInstructions();
-    
+
     if (!$api_result['success']) {
       return [
         'success' => FALSE,
@@ -114,7 +122,7 @@ class SystemInstructionsManagerService {
     }
 
     $api_instructions = $api_result['data'];
-    
+
     // Check if these instructions are different from current active version.
     if (!$this->storageService->areInstructionsDifferent($api_instructions)) {
       return [
@@ -166,15 +174,15 @@ class SystemInstructionsManagerService {
 
     // Create local version first.
     $new_version = $this->storageService->createVersion($instructions, $notes);
-    
+
     // Try to push to API.
     $api_result = $this->apiService->setSystemInstructions($instructions);
-    
+
     if (!$api_result['success']) {
       $this->logger->error('Failed to save system instructions to API: @error', [
         '@error' => $api_result['error'],
       ]);
-      
+
       return [
         'success' => FALSE,
         'message' => 'Local version saved but API update failed: ' . $api_result['error'],
@@ -204,9 +212,9 @@ class SystemInstructionsManagerService {
    */
   public function getCurrentInstructions(): array {
     $sync_result = $this->syncFromApi();
-    
+
     $active = $this->storageService->getActiveInstructions();
-    
+
     if (!$active) {
       return [
         'instructions' => '',
@@ -215,7 +223,7 @@ class SystemInstructionsManagerService {
         'sync_error' => $sync_result['success'] ? '' : $sync_result['message'],
       ];
     }
-    
+
     return [
       'instructions' => $this->formatInstructionsText($active['instructions']),
       'version' => (int) $active['version'],
@@ -235,7 +243,7 @@ class SystemInstructionsManagerService {
    */
   public function revertToVersion(int $version): array {
     $target_version = $this->storageService->getVersion($version);
-    
+
     if (!$target_version) {
       return [
         'success' => FALSE,
@@ -245,15 +253,15 @@ class SystemInstructionsManagerService {
 
     // Set as active version.
     $this->storageService->setActiveVersion($version);
-    
+
     // Push to API.
     $api_result = $this->apiService->setSystemInstructions($target_version['instructions']);
-    
+
     if (!$api_result['success']) {
       $this->logger->error('Failed to revert system instructions in API: @error', [
         '@error' => $api_result['error'],
       ]);
-      
+
       return [
         'success' => FALSE,
         'message' => 'Local version reverted but API update failed: ' . $api_result['error'],
@@ -288,7 +296,7 @@ class SystemInstructionsManagerService {
    */
   public function getVersionStats(): array {
     $active = $this->storageService->getActiveInstructions();
-    
+
     return [
       'total_versions' => $this->storageService->getVersionCount(),
       'active_version' => $active ? (int) $active['version'] : 0,
@@ -309,37 +317,49 @@ class SystemInstructionsManagerService {
    *   The formatted text with proper line breaks.
    */
   protected function formatInstructionsText(string $text): string {
-    // Remove any existing excessive whitespace
+    // Remove any existing excessive whitespace.
     $text = trim($text);
-    
-    // Add line breaks after common patterns
+
+    // Add line breaks after common patterns.
     $patterns = [
       // Add double line breaks before main headings (## )
       '/  ## /' => "\n\n## ",
       // Add double line breaks before sub-headings (### )
       '/  ### /' => "\n\n### ",
-      // Add single line break before list items that follow text
+      // Add single line break before list items that follow text.
       '/  - /' => "\n- ",
-      // Add line breaks after numbered list items
+      // Add line breaks after numbered list items.
       '/(\d+\. [^0-9]+)  /' => "$1\n",
-      // Add line breaks after sentences that end with periods and are followed by capital letters
+      // Add line breaks after sentences that end with periods and are
+      // followed by capital letters.
       '/(\.)  ([A-Z])/' => "$1\n\n$2",
-      // Add line breaks after colons when followed by capital letters (for section introductions)
+      // Add line breaks after colons when followed by capital letters
+      // (for section introductions).
       '/(:)  ([A-Z][^:]+)/' => "$1\n$2",
     ];
-    
+
     foreach ($patterns as $pattern => $replacement) {
       $text = preg_replace($pattern, $replacement, $text);
     }
-    
-    // Clean up any triple or more line breaks
+
+    // Clean up any triple or more line breaks.
     $text = preg_replace('/\n{3,}/', "\n\n", $text);
-    
-    // Ensure there's proper spacing around headings
+
+    // Ensure there's proper spacing around headings.
     $text = preg_replace('/\n(#{1,3} )/', "\n\n$1", $text);
     $text = preg_replace('/(#{1,3} [^\n]+)\n([^#\n])/', "$1\n\n$2", $text);
-    
+
     return trim($text);
+  }
+
+  /**
+   * Get the storage service.
+   *
+   * @return \Drupal\ai_engine_chat\Service\SystemInstructionsStorageService
+   *   The storage service.
+   */
+  public function getStorageService(): SystemInstructionsStorageService {
+    return $this->storageService;
   }
 
 }

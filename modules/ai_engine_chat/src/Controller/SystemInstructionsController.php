@@ -5,7 +5,6 @@ namespace Drupal\ai_engine_chat\Controller;
 use Drupal\ai_engine_chat\Service\SystemInstructionsManagerService;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateFormatterInterface;
-use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\user\UserStorageInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -120,13 +119,13 @@ class SystemInstructionsController extends ControllerBase {
     foreach ($versions as $version) {
       $user = $this->userStorage->load($version['created_by']);
       $username = $user ? $user->getDisplayName() : $this->t('Unknown');
-      
+
       if ($version['created_by'] == 1) {
         $username = $this->t('System (API Sync)');
       }
 
       $actions = [];
-      
+
       if (!$version['is_active']) {
         $actions['revert'] = [
           'title' => $this->t('Revert'),
@@ -185,7 +184,7 @@ class SystemInstructionsController extends ControllerBase {
 
     $version_data = $this->instructionsManager->getAllVersions();
     $current_version = NULL;
-    
+
     foreach ($version_data as $v) {
       if ($v['version'] == $version) {
         $current_version = $v;
@@ -202,7 +201,7 @@ class SystemInstructionsController extends ControllerBase {
 
     $user = $this->userStorage->load($current_version['created_by']);
     $username = $user ? $user->getDisplayName() : $this->t('Unknown');
-    
+
     if ($current_version['created_by'] == 1) {
       $username = $this->t('System (API Sync)');
     }

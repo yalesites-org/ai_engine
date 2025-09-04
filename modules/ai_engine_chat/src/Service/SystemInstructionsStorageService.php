@@ -2,6 +2,7 @@
 
 namespace Drupal\ai_engine_chat\Service;
 
+use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Session\AccountProxyInterface;
 
@@ -25,6 +26,13 @@ class SystemInstructionsStorageService {
   protected $currentUser;
 
   /**
+   * The time service.
+   *
+   * @var \Drupal\Component\Datetime\TimeInterface
+   */
+  protected $time;
+
+  /**
    * The table name.
    */
   const TABLE_NAME = 'ai_engine_system_instructions';
@@ -36,10 +44,13 @@ class SystemInstructionsStorageService {
    *   The database connection.
    * @param \Drupal\Core\Session\AccountProxyInterface $current_user
    *   The current user.
+   * @param \Drupal\Component\Datetime\TimeInterface $time
+   *   The time service.
    */
-  public function __construct(Connection $database, AccountProxyInterface $current_user) {
+  public function __construct(Connection $database, AccountProxyInterface $current_user, TimeInterface $time) {
     $this->database = $database;
     $this->currentUser = $current_user;
+    $this->time = $time;
   }
 
   /**
@@ -53,9 +64,9 @@ class SystemInstructionsStorageService {
       ->fields('si')
       ->condition('is_active', 1)
       ->range(0, 1);
-    
+
     $result = $query->execute()->fetchAssoc();
-    
+
     return $result ?: NULL;
   }
 
@@ -69,7 +80,7 @@ class SystemInstructionsStorageService {
     $query = $this->database->select(self::TABLE_NAME, 'si')
       ->fields('si')
       ->orderBy('version', 'DESC');
-    
+
     return $query->execute()->fetchAll(\PDO::FETCH_ASSOC);
   }
 
@@ -87,9 +98,9 @@ class SystemInstructionsStorageService {
       ->fields('si')
       ->condition('version', $version)
       ->range(0, 1);
-    
+
     $result = $query->execute()->fetchAssoc();
-    
+
     return $result ?: NULL;
   }
 
@@ -106,14 +117,14 @@ class SystemInstructionsStorageService {
    * @return int
    *   The new version number.
    */
-  public function createVersion(string $instructions, string $notes = '', int $created_by = NULL): int {
+  public function createVersion(string $instructions, string $notes = '', ?int $created_by = NULL): int {
     if ($created_by === NULL) {
       $created_by = $this->currentUser->id();
     }
 
     // Get the next version number.
     $next_version = $this->getNextVersionNumber();
-    
+
     // Deactivate all existing versions.
     $this->database->update(self::TABLE_NAME)
       ->fields(['is_active' => 0])
@@ -126,7 +137,7 @@ class SystemInstructionsStorageService {
         'instructions' => $instructions,
         'version' => $next_version,
         'created_by' => $created_by,
-        'created_date' => \Drupal::time()->getRequestTime(),
+        'created_date' => $this->time->getRequestTime(),
         'is_active' => 1,
         'notes' => $notes,
       ])
@@ -177,12 +188,12 @@ class SystemInstructionsStorageService {
    */
   public function areInstructionsDifferent(string $instructions): bool {
     $active = $this->getActiveInstructions();
-    
+
     if (!$active) {
       // No active instructions, so these are different.
       return TRUE;
     }
-    
+
     return trim($active['instructions']) !== trim($instructions);
   }
 
@@ -195,9 +206,9 @@ class SystemInstructionsStorageService {
   protected function getNextVersionNumber(): int {
     $query = $this->database->select(self::TABLE_NAME, 'si');
     $query->addExpression('MAX(version)', 'max_version');
-    
+
     $result = $query->execute()->fetchField();
-    
+
     return ($result ? (int) $result : 0) + 1;
   }
 
@@ -225,7 +236,7 @@ class SystemInstructionsStorageService {
    */
   public function deleteVersion(int $version): bool {
     $existing = $this->getVersion($version);
-    
+
     if (!$existing || $existing['is_active']) {
       // Can't delete non-existent or active versions.
       return FALSE;
