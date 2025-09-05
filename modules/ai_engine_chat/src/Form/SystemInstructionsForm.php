@@ -13,8 +13,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Form for managing system instructions.
  */
 class SystemInstructionsForm extends FormBase {
-  const MAX_INSTRUCTIONS_LENGTH = 4000;
-  const WARNING_THRESHOLD = 3500;
 
   /**
    * The system instructions manager.
@@ -58,6 +56,26 @@ class SystemInstructionsForm extends FormBase {
    */
   public function getFormId() {
     return 'ai_engine_chat_system_instructions_form';
+  }
+
+  /**
+   * Get the maximum instructions length from configuration.
+   *
+   * @return int
+   *   The maximum instructions length.
+   */
+  protected function getMaxInstructionsLength(): int {
+    return $this->configFactory->get('ai_engine_chat.settings')->get('system_instructions_max_length') ?: 4000;
+  }
+
+  /**
+   * Get the warning threshold from configuration.
+   *
+   * @return int
+   *   The warning threshold.
+   */
+  protected function getWarningThreshold(): int {
+    return $this->configFactory->get('ai_engine_chat.settings')->get('system_instructions_warning_threshold') ?: 3500;
   }
 
   /**
@@ -171,15 +189,16 @@ class SystemInstructionsForm extends FormBase {
       ]),
     ];
 
+    $max_length = $this->getMaxInstructionsLength();
     $form['form_wrapper']['instructions'] = [
       '#type' => 'textarea',
       '#title' => $this->t('System Instructions'),
-      '#description' => '<span id="instructions-character-count" class="character-count">' . $this->t('Content recommended length set to 4,000 characters.') . '</span>',
+      '#description' => '<span id="instructions-character-count" class="character-count">' . $this->t('Content recommended length set to @max characters.', ['@max' => number_format($max_length)]) . '</span>',
       '#default_value' => $current['instructions'],
       '#rows' => 15,
       '#maxlength' => NULL,
       '#attributes' => [
-        'data-maxlength' => self::MAX_INSTRUCTIONS_LENGTH,
+        'data-maxlength' => $max_length,
         'data-maxlength-warning-class' => 'warning',
         'data-maxlength-limit-reached-class' => 'error',
       ],
@@ -220,8 +239,8 @@ class SystemInstructionsForm extends FormBase {
 
     // Add JavaScript for character counting.
     $form['#attached']['drupalSettings']['aiEngineChatSystemInstructions'] = [
-      'maxLength' => self::MAX_INSTRUCTIONS_LENGTH,
-      'warningThreshold' => self::WARNING_THRESHOLD,
+      'maxLength' => $max_length,
+      'warningThreshold' => $this->getWarningThreshold(),
     ];
 
     return $form;
@@ -250,9 +269,11 @@ class SystemInstructionsForm extends FormBase {
     }
 
     // Soft validation - warn but don't prevent submission for large content.
-    if (strlen($instructions) > self::MAX_INSTRUCTIONS_LENGTH) {
-      $this->messenger()->addWarning($this->t('Instructions are @count characters, which exceeds the recommended maximum of 4,000 characters. This may impact AI performance.', [
+    $max_length = $this->getMaxInstructionsLength();
+    if (strlen($instructions) > $max_length) {
+      $this->messenger()->addWarning($this->t('Instructions are @count characters, which exceeds the recommended maximum of @max characters. This may impact AI performance.', [
         '@count' => strlen($instructions),
+        '@max' => number_format($max_length),
       ]));
     }
   }

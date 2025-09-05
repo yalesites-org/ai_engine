@@ -100,6 +100,9 @@ class SystemInstructionsManagerService {
         $remaining_cooldown = self::API_SYNC_COOLDOWN - $time_since_last_sync;
         return [
           'success' => TRUE,
+          'local_success' => TRUE,
+          'api_success' => TRUE,
+          'skipped' => TRUE,
           'message' => $this->t('API sync skipped. Please wait @seconds more seconds before syncing again.', [
             '@seconds' => $remaining_cooldown,
           ]),
@@ -118,8 +121,11 @@ class SystemInstructionsManagerService {
       $this->logger->warning('API sync failed: @error', ['@error' => $api_result['error']]);
 
       return [
-        'success' => TRUE,
+        'success' => FALSE,
+        'local_success' => TRUE,
+        'api_success' => FALSE,
         'message' => 'Could not sync with API: ' . $api_result['error'] . ' (using local version)',
+        'api_error' => $api_result['error'],
         'version' => $this->storageService->getActiveInstructions()['version'] ?? NULL,
       ];
     }
@@ -130,6 +136,8 @@ class SystemInstructionsManagerService {
     if (!$this->storageService->areInstructionsDifferent($api_instructions)) {
       return [
         'success' => TRUE,
+        'local_success' => TRUE,
+        'api_success' => TRUE,
         'message' => 'Instructions are already up to date.',
         'version' => $this->storageService->getActiveInstructions()['version'] ?? NULL,
       ];
@@ -149,6 +157,8 @@ class SystemInstructionsManagerService {
 
     return [
       'success' => TRUE,
+      'local_success' => TRUE,
+      'api_success' => TRUE,
       'message' => 'Instructions synced successfully. New version: ' . $new_version,
       'version' => $new_version,
     ];
@@ -170,6 +180,8 @@ class SystemInstructionsManagerService {
     if (!$this->storageService->areInstructionsDifferent($instructions)) {
       return [
         'success' => TRUE,
+        'local_success' => TRUE,
+        'api_success' => TRUE,
         'message' => 'No changes detected. Instructions not saved.',
         'version' => $this->storageService->getActiveInstructions()['version'] ?? NULL,
       ];
@@ -188,7 +200,10 @@ class SystemInstructionsManagerService {
 
       return [
         'success' => FALSE,
+        'local_success' => TRUE,
+        'api_success' => FALSE,
         'message' => 'Local version saved but API update failed: ' . $api_result['error'],
+        'api_error' => $api_result['error'],
         'version' => $new_version,
       ];
     }
@@ -199,6 +214,8 @@ class SystemInstructionsManagerService {
 
     return [
       'success' => TRUE,
+      'local_success' => TRUE,
+      'api_success' => TRUE,
       'message' => 'Instructions saved successfully. Version: ' . $new_version,
       'version' => $new_version,
     ];

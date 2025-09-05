@@ -130,11 +130,22 @@ class SystemInstructionsStorageService {
     // Use database transaction for atomicity.
     $transaction = $this->database->startTransaction();
     try {
-      // Deactivate all existing versions.
-      $this->database->update(self::TABLE_NAME)
-        ->fields(['is_active' => 0])
+      // Lock active versions to prevent race conditions.
+      // Use SELECT FOR UPDATE to lock any active versions during this transaction.
+      $active_versions = $this->database->select(self::TABLE_NAME, 'si')
+        ->fields('si', ['id'])
         ->condition('is_active', 1)
-        ->execute();
+        ->forUpdate()
+        ->execute()
+        ->fetchAll();
+
+      // Deactivate all existing versions.
+      if (!empty($active_versions)) {
+        $this->database->update(self::TABLE_NAME)
+          ->fields(['is_active' => 0])
+          ->condition('is_active', 1)
+          ->execute();
+      }
 
       // Insert the new version.
       $this->database->insert(self::TABLE_NAME)
@@ -175,11 +186,22 @@ class SystemInstructionsStorageService {
     // Use database transaction for atomicity.
     $transaction = $this->database->startTransaction();
     try {
-      // Deactivate all versions.
-      $this->database->update(self::TABLE_NAME)
-        ->fields(['is_active' => 0])
+      // Lock active versions to prevent race conditions.
+      // Use SELECT FOR UPDATE to lock any active versions during this transaction.
+      $active_versions = $this->database->select(self::TABLE_NAME, 'si')
+        ->fields('si', ['id'])
         ->condition('is_active', 1)
-        ->execute();
+        ->forUpdate()
+        ->execute()
+        ->fetchAll();
+
+      // Deactivate all versions.
+      if (!empty($active_versions)) {
+        $this->database->update(self::TABLE_NAME)
+          ->fields(['is_active' => 0])
+          ->condition('is_active', 1)
+          ->execute();
+      }
 
       // Activate the specified version.
       $this->database->update(self::TABLE_NAME)

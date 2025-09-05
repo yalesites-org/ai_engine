@@ -5,3 +5,5 @@ azure_base_url: ''
 initial_questions: []
 disclaimer: ''
 footer: ''
+system_instructions_max_length: 4000
+system_instructions_warning_threshold: 3500

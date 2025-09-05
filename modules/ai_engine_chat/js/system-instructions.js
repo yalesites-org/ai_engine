@@ -6,8 +6,6 @@
 (function ($, Drupal, once) {
   'use strict';
 
-  // Debug flag - set to true to enable console logging
-  const DEBUG = false;
 
   /**
    * Auto-refresh behavior for loading state.
@@ -44,11 +42,8 @@
         let $counter = $('#instructions-character-count');
         if ($counter.length === 0) {
           // Fallback: create if not found
-          if (DEBUG) console.log('Character count element not found, creating fallback');
           $counter = $('<div id="instructions-character-count" class="character-count"></div>');
           $textarea.after($counter);
-        } else {
-          if (DEBUG) console.log('Character count element found');
         }
 
         function updateCounter() {
