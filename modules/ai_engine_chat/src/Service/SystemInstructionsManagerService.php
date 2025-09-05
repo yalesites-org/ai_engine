@@ -114,9 +114,9 @@ class SystemInstructionsManagerService {
     $api_result = $this->apiService->getSystemInstructions();
 
     if (!$api_result['success']) {
-      // Log the error but don't fail the entire operation
+      // Log the error but don't fail the entire operation.
       $this->logger->warning('API sync failed: @error', ['@error' => $api_result['error']]);
-      
+
       return [
         'success' => TRUE,
         'message' => 'Could not sync with API: ' . $api_result['error'] . ' (using local version)',

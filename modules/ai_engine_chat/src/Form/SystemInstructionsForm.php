@@ -181,7 +181,7 @@ class SystemInstructionsForm extends FormBase {
     $form['form_wrapper']['instructions'] = [
       '#type' => 'textarea',
       '#title' => $this->t('System Instructions'),
-      '#description' => '<span id="instructions-character-count" class="character-count">Content recommended length set to 4,000 characters.</span>',
+      '#description' => '<span id="instructions-character-count" class="character-count">' . $this->t('Content recommended length set to 4,000 characters.') . '</span>',
       '#default_value' => $current['instructions'],
       '#rows' => 15,
       '#maxlength' => NULL,
