@@ -158,6 +158,26 @@ class AiEngineChatAdmin extends ConfigFormBase {
           ],
         ],
       ];
+
+      $form['system_instructions']['system_instructions_max_length'] = [
+        '#type' => 'number',
+        '#title' => $this->t('Maximum Instructions Length'),
+        '#description' => $this->t('The recommended maximum character length for system instructions. Users can exceed this limit, but will receive a performance warning.'),
+        '#default_value' => $config->get('system_instructions_max_length') ?? 4000,
+        '#min' => 100,
+        '#max' => 50000,
+        '#required' => TRUE,
+      ];
+
+      $form['system_instructions']['system_instructions_warning_threshold'] = [
+        '#type' => 'number',
+        '#title' => $this->t('Warning Threshold'),
+        '#description' => $this->t('Character count at which to show a warning to users as they approach the maximum length.'),
+        '#default_value' => $config->get('system_instructions_warning_threshold') ?? 3500,
+        '#min' => 100,
+        '#max' => 50000,
+        '#required' => TRUE,
+      ];
     }
 
     return parent::buildForm($form, $form_state);
@@ -181,6 +201,14 @@ class AiEngineChatAdmin extends ConfigFormBase {
 
       if (empty($form_state->getValue('system_instructions_api_key'))) {
         $form_state->setErrorByName('system_instructions_api_key', $this->t('API Key is required when system instruction modification is enabled.'));
+      }
+
+      // Validate character limits.
+      $max_length = $form_state->getValue('system_instructions_max_length');
+      $warning_threshold = $form_state->getValue('system_instructions_warning_threshold');
+      
+      if ($warning_threshold >= $max_length) {
+        $form_state->setErrorByName('system_instructions_warning_threshold', $this->t('Warning threshold must be less than the maximum length.'));
       }
     }
   }
@@ -207,6 +235,11 @@ class AiEngineChatAdmin extends ConfigFormBase {
           ->set('system_instructions_web_app_name', $form_state->getValue('system_instructions_web_app_name'))
           ->set('system_instructions_api_key', $form_state->getValue('system_instructions_api_key'));
       }
+
+      // Always save character limits (they apply regardless of API enablement).
+      $config
+        ->set('system_instructions_max_length', $form_state->getValue('system_instructions_max_length'))
+        ->set('system_instructions_warning_threshold', $form_state->getValue('system_instructions_warning_threshold'));
     }
 
     $config->save();
