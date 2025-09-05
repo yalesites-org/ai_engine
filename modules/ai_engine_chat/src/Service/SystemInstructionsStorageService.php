@@ -63,6 +63,7 @@ class SystemInstructionsStorageService {
     $query = $this->database->select(self::TABLE_NAME, 'si')
       ->fields('si')
       ->condition('is_active', 1)
+      ->orderBy('id', 'DESC')
       ->range(0, 1);
 
     $result = $query->execute()->fetchAssoc();
@@ -97,6 +98,7 @@ class SystemInstructionsStorageService {
     $query = $this->database->select(self::TABLE_NAME, 'si')
       ->fields('si')
       ->condition('version', $version)
+      ->orderBy('id', 'DESC')
       ->range(0, 1);
 
     $result = $query->execute()->fetchAssoc();
@@ -125,25 +127,33 @@ class SystemInstructionsStorageService {
     // Get the next version number.
     $next_version = $this->getNextVersionNumber();
 
-    // Deactivate all existing versions.
-    $this->database->update(self::TABLE_NAME)
-      ->fields(['is_active' => 0])
-      ->condition('is_active', 1)
-      ->execute();
+    // Use database transaction for atomicity.
+    $transaction = $this->database->startTransaction();
+    try {
+      // Deactivate all existing versions.
+      $this->database->update(self::TABLE_NAME)
+        ->fields(['is_active' => 0])
+        ->condition('is_active', 1)
+        ->execute();
 
-    // Insert the new version.
-    $this->database->insert(self::TABLE_NAME)
-      ->fields([
-        'instructions' => $instructions,
-        'version' => $next_version,
-        'created_by' => $created_by,
-        'created_date' => $this->time->getRequestTime(),
-        'is_active' => 1,
-        'notes' => $notes,
-      ])
-      ->execute();
+      // Insert the new version.
+      $this->database->insert(self::TABLE_NAME)
+        ->fields([
+          'instructions' => $instructions,
+          'version' => $next_version,
+          'created_by' => $created_by,
+          'created_date' => $this->time->getRequestTime(),
+          'is_active' => 1,
+          'notes' => $notes,
+        ])
+        ->execute();
 
-    return $next_version;
+      return $next_version;
+    }
+    catch (\Exception $e) {
+      // Transaction will be rolled back automatically.
+      throw $e;
+    }
   }
 
   /**
@@ -162,19 +172,27 @@ class SystemInstructionsStorageService {
       return FALSE;
     }
 
-    // Deactivate all versions.
-    $this->database->update(self::TABLE_NAME)
-      ->fields(['is_active' => 0])
-      ->condition('is_active', 1)
-      ->execute();
+    // Use database transaction for atomicity.
+    $transaction = $this->database->startTransaction();
+    try {
+      // Deactivate all versions.
+      $this->database->update(self::TABLE_NAME)
+        ->fields(['is_active' => 0])
+        ->condition('is_active', 1)
+        ->execute();
 
-    // Activate the specified version.
-    $this->database->update(self::TABLE_NAME)
-      ->fields(['is_active' => 1])
-      ->condition('version', $version)
-      ->execute();
+      // Activate the specified version.
+      $this->database->update(self::TABLE_NAME)
+        ->fields(['is_active' => 1])
+        ->condition('version', $version)
+        ->execute();
 
-    return TRUE;
+      return TRUE;
+    }
+    catch (\Exception $e) {
+      // Transaction will be rolled back automatically.
+      throw $e;
+    }
   }
 
   /**
