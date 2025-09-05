@@ -55,18 +55,10 @@
 }
 
 .character-count {
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.character-count.warning {
-  color: #f59e0b;
-}
-
-.character-count.error {
-  color: #ef4444;
-  font-weight: bold;
+  margin-left: 0;
+  font-size: inherit;
+  color: #9ca3af;
+  font-weight: normal;
 }
 
 .form-textarea[data-maxlength].warning {

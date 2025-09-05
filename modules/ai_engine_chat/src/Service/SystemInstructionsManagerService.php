@@ -114,10 +114,13 @@ class SystemInstructionsManagerService {
     $api_result = $this->apiService->getSystemInstructions();
 
     if (!$api_result['success']) {
+      // Log the error but don't fail the entire operation
+      $this->logger->warning('API sync failed: @error', ['@error' => $api_result['error']]);
+      
       return [
-        'success' => FALSE,
-        'message' => 'Failed to fetch from API: ' . $api_result['error'],
-        'version' => NULL,
+        'success' => TRUE,
+        'message' => 'Could not sync with API: ' . $api_result['error'] . ' (using local version)',
+        'version' => $this->storageService->getActiveInstructions()['version'] ?? NULL,
       ];
     }
 

@@ -180,7 +180,7 @@ class SystemInstructionsForm extends FormBase {
     $form['form_wrapper']['instructions'] = [
       '#type' => 'textarea',
       '#title' => $this->t('System Instructions'),
-      '#description' => $this->t('Enter the system instructions for the AI chat. Recommended maximum length: 4,000 characters.'),
+      '#description' => '<span id="instructions-character-count" class="character-count">Content recommended length set to 4,000 characters.</span>',
       '#default_value' => $current['instructions'],
       '#rows' => 15,
       '#maxlength' => NULL,
@@ -197,14 +197,6 @@ class SystemInstructionsForm extends FormBase {
       '#title' => $this->t('Version Notes'),
       '#description' => $this->t('Optional notes about this version (e.g., "Updated for new features", "Fixed typo").'),
       '#maxlength' => 255,
-    ];
-
-    $form['form_wrapper']['character_count'] = [
-      '#type' => 'container',
-      '#attributes' => [
-        'class' => ['character-count'],
-        'id' => 'instructions-character-count',
-      ],
     ];
 
     $form['form_wrapper']['actions'] = [
