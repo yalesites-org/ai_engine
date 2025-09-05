@@ -8,7 +8,6 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Form for managing system instructions.
@@ -65,12 +64,6 @@ class SystemInstructionsForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    // Check if the feature is enabled.
-    $config = $this->configFactory->get('ai_engine_chat.settings');
-    if (!$config->get('system_instructions_enabled')) {
-      throw new AccessDeniedHttpException('System instruction modification is not enabled.');
-    }
-
     $form['#attached']['library'][] = 'ai_engine_chat/system_instructions';
 
     // Create a wrapper for AJAX updates.
