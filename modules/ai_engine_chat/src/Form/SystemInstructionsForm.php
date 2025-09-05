@@ -3,8 +3,6 @@
 namespace Drupal\ai_engine_chat\Form;
 
 use Drupal\ai_engine_chat\Service\SystemInstructionsManagerService;
-use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -16,6 +14,8 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  * Form for managing system instructions.
  */
 class SystemInstructionsForm extends FormBase {
+  const MAX_INSTRUCTIONS_LENGTH = 4000;
+  const WARNING_THRESHOLD = 3500;
 
   /**
    * The system instructions manager.
@@ -83,12 +83,13 @@ class SystemInstructionsForm extends FormBase {
     // Show loading only on initial page load, not on AJAX rebuilds.
     $show_loading = $form_state->get('show_loading');
     $refreshed = $form_state->get('refreshed');
-    
+
     if ($show_loading === NULL && !$refreshed) {
       // First time loading the form - show loading state.
       $show_loading = TRUE;
       $form_state->set('show_loading', TRUE);
-    } else {
+    }
+    else {
       // Already refreshed or explicitly set to FALSE.
       $show_loading = FALSE;
     }
@@ -107,7 +108,7 @@ class SystemInstructionsForm extends FormBase {
       ];
 
       $form['form_wrapper']['loading']['message'] = [
-        '#markup' => '<div class="message">' . $this->t('Syncing with API, please wait...') . '</div>',
+        '#markup' => '<div class="message">' . $this->t('Syncing system instructions, please wait...') . '</div>',
       ];
 
       // Add auto-refresh after a short delay.
@@ -142,7 +143,7 @@ class SystemInstructionsForm extends FormBase {
     }
     catch (\Exception $e) {
       // If API sync fails, get local version and show error.
-      $this->messenger()->addError($this->t('Failed to sync with API: @error', ['@error' => $e->getMessage()]));
+      $this->messenger()->addError($this->t('Failed to sync system instructions: @error', ['@error' => $e->getMessage()]));
       $active = $this->instructionsManager->getStorageService()->getActiveInstructions();
       $current = [
         'instructions' => $active ? $active['instructions'] : '',
@@ -162,7 +163,7 @@ class SystemInstructionsForm extends FormBase {
     if (!$current['synced']) {
       $form['form_wrapper']['status']['sync_warning'] = [
         '#type' => 'item',
-        '#markup' => $this->t('<div class="messages messages--warning">Warning: Could not sync with API: @error</div>', [
+        '#markup' => $this->t('<div class="messages messages--warning">Warning: Could not sync system instructions: @error</div>', [
           '@error' => $current['sync_error'],
         ]),
       ];
@@ -185,7 +186,7 @@ class SystemInstructionsForm extends FormBase {
       '#rows' => 15,
       '#maxlength' => NULL,
       '#attributes' => [
-        'data-maxlength' => 4000,
+        'data-maxlength' => self::MAX_INSTRUCTIONS_LENGTH,
         'data-maxlength-warning-class' => 'warning',
         'data-maxlength-limit-reached-class' => 'error',
       ],
@@ -211,7 +212,7 @@ class SystemInstructionsForm extends FormBase {
 
     $form['form_wrapper']['actions']['sync'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Sync from API'),
+      '#value' => $this->t('Sync'),
       '#submit' => ['::syncFromApi'],
     ];
 
@@ -226,8 +227,8 @@ class SystemInstructionsForm extends FormBase {
 
     // Add JavaScript for character counting.
     $form['#attached']['drupalSettings']['aiEngineChatSystemInstructions'] = [
-      'maxLength' => 4000,
-      'warningThreshold' => 3500,
+      'maxLength' => self::MAX_INSTRUCTIONS_LENGTH,
+      'warningThreshold' => self::WARNING_THRESHOLD,
     ];
 
     return $form;
@@ -242,7 +243,7 @@ class SystemInstructionsForm extends FormBase {
     if ($triggering_element && isset($triggering_element['#id']) && $triggering_element['#id'] === 'system-instructions-refresh-btn') {
       return;
     }
-    
+
     // Skip validation if we're still in loading state.
     if ($form_state->get('show_loading')) {
       return;
@@ -256,7 +257,7 @@ class SystemInstructionsForm extends FormBase {
     }
 
     // Soft validation - warn but don't prevent submission for large content.
-    if (strlen($instructions) > 4000) {
+    if (strlen($instructions) > self::MAX_INSTRUCTIONS_LENGTH) {
       $this->messenger()->addWarning($this->t('Instructions are @count characters, which exceeds the recommended maximum of 4,000 characters. This may impact AI performance.', [
         '@count' => strlen($instructions),
       ]));

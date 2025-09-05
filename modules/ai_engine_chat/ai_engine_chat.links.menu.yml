@@ -12,3 +12,11 @@ ai_engine_chat.settings:
   route_name: ai_engine_chat.settings
   parent: ai_engine.admin
   weight: 1
+
+# System Instructions management
+ai_engine_chat.system_instructions:
+  title: 'System Instructions'
+  description: 'Manage AI chat system instructions with version control'
+  route_name: ai_engine_chat.system_instructions_form
+  parent: ai_engine.admin
+  weight: 2
