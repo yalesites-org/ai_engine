@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * @file
+ * AI Engine System Instructions module.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function ai_engine_system_instructions_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.ai_engine_system_instructions':
+      return '<p>' . t('This module provides system instructions management for AI Engine with versioning and API synchronization capabilities.') . '</p>';
+  }
+}

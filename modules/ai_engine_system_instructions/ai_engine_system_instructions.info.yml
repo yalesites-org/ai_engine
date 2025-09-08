@@ -1,0 +1,9 @@
+name: AI Engine System Instructions
+type: module
+description: System instructions management for AI Engine with versioning and API sync.
+core_version_requirement: ^10 || ^11
+package: AI Engine
+dependencies:
+  - ai_engine
+  - key
+configure: ai_engine_system_instructions.settings

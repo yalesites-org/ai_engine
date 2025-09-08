@@ -1,8 +1,8 @@
 <?php
 
-namespace Drupal\ai_engine_chat\Form;
+namespace Drupal\ai_engine_system_instructions\Form;
 
-use Drupal\ai_engine_chat\Service\SystemInstructionsManagerService;
+use Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -18,7 +18,7 @@ class SystemInstructionsRevertForm extends ConfirmFormBase {
   /**
    * The system instructions manager.
    *
-   * @var \Drupal\ai_engine_chat\Service\SystemInstructionsManagerService
+   * @var \Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService
    */
   protected $instructionsManager;
 
@@ -39,7 +39,7 @@ class SystemInstructionsRevertForm extends ConfirmFormBase {
   /**
    * Constructs a SystemInstructionsRevertForm.
    *
-   * @param \Drupal\ai_engine_chat\Service\SystemInstructionsManagerService $instructions_manager
+   * @param \Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService $instructions_manager
    *   The system instructions manager.
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The request stack.
@@ -54,7 +54,7 @@ class SystemInstructionsRevertForm extends ConfirmFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('ai_engine_chat.system_instructions_manager'),
+      $container->get('ai_engine_system_instructions.manager'),
       $container->get('request_stack')
     );
   }
@@ -63,7 +63,7 @@ class SystemInstructionsRevertForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'ai_engine_chat_system_instructions_revert_form';
+    return 'ai_engine_system_instructions_revert_form';
   }
 
   /**
@@ -71,7 +71,7 @@ class SystemInstructionsRevertForm extends ConfirmFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $version = NULL) {
     // Check if the feature is enabled.
-    $config = $this->config('ai_engine_chat.settings');
+    $config = $this->config('ai_engine_system_instructions.settings');
     if (!$config->get('system_instructions_enabled')) {
       throw new AccessDeniedHttpException('System instruction modification is not enabled.');
     }
@@ -164,7 +164,7 @@ class SystemInstructionsRevertForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('ai_engine_chat.system_instructions_versions');
+    return new Url('ai_engine_system_instructions.versions');
   }
 
   /**
@@ -182,11 +182,11 @@ class SystemInstructionsRevertForm extends ConfirmFormBase {
 
     if ($result['success']) {
       $this->messenger()->addMessage($result['message']);
-      $form_state->setRedirect('ai_engine_chat.system_instructions_form');
+      $form_state->setRedirect('ai_engine_system_instructions.form');
     }
     else {
       $this->messenger()->addError($result['message']);
-      $form_state->setRedirect('ai_engine_chat.system_instructions_versions');
+      $form_state->setRedirect('ai_engine_system_instructions.versions');
     }
   }
 

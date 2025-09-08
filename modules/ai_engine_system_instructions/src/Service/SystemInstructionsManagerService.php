@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_engine_chat\Service;
+namespace Drupal\ai_engine_system_instructions\Service;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\KeyValueStore\KeyValueFactoryInterface;
@@ -17,14 +17,14 @@ class SystemInstructionsManagerService {
   /**
    * The API service.
    *
-   * @var \Drupal\ai_engine_chat\Service\SystemInstructionsApiService
+   * @var \Drupal\ai_engine_system_instructions\Service\SystemInstructionsApiService
    */
   protected $apiService;
 
   /**
    * The storage service.
    *
-   * @var \Drupal\ai_engine_chat\Service\SystemInstructionsStorageService
+   * @var \Drupal\ai_engine_system_instructions\Service\SystemInstructionsStorageService
    */
   protected $storageService;
 
@@ -57,9 +57,9 @@ class SystemInstructionsManagerService {
   /**
    * Constructs a SystemInstructionsManagerService.
    *
-   * @param \Drupal\ai_engine_chat\Service\SystemInstructionsApiService $api_service
+   * @param \Drupal\ai_engine_system_instructions\Service\SystemInstructionsApiService $api_service
    *   The API service.
-   * @param \Drupal\ai_engine_chat\Service\SystemInstructionsStorageService $storage_service
+   * @param \Drupal\ai_engine_system_instructions\Service\SystemInstructionsStorageService $storage_service
    *   The storage service.
    * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   The logger factory.
@@ -71,8 +71,8 @@ class SystemInstructionsManagerService {
   public function __construct(SystemInstructionsApiService $api_service, SystemInstructionsStorageService $storage_service, LoggerChannelFactoryInterface $logger_factory, KeyValueFactoryInterface $key_value_factory, TimeInterface $time) {
     $this->apiService = $api_service;
     $this->storageService = $storage_service;
-    $this->logger = $logger_factory->get('ai_engine_chat');
-    $this->keyValueStore = $key_value_factory->get('ai_engine_chat_system_instructions');
+    $this->logger = $logger_factory->get('ai_engine_system_instructions');
+    $this->keyValueStore = $key_value_factory->get('ai_engine_system_instructions');
     $this->time = $time;
   }
 
@@ -375,7 +375,7 @@ class SystemInstructionsManagerService {
   /**
    * Get the storage service.
    *
-   * @return \Drupal\ai_engine_chat\Service\SystemInstructionsStorageService
+   * @return \Drupal\ai_engine_system_instructions\Service\SystemInstructionsStorageService
    *   The storage service.
    */
   public function getStorageService(): SystemInstructionsStorageService {

@@ -11,16 +11,3 @@ chat_button:
   css:
     theme:
       css/chat_button.css: {}
-
-# System instructions admin interface
-system_instructions:
-  version: VERSION
-  css:
-    theme:
-      css/system-instructions.css: {}
-  js:
-    js/system-instructions.js: {}
-  dependencies:
-    - core/drupal
-    - core/jquery
-    - core/once

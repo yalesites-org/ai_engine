@@ -1,0 +1,18 @@
+services:
+  ai_engine_system_instructions.api:
+    class: Drupal\ai_engine_system_instructions\Service\SystemInstructionsApiService
+    arguments: ['@http_client', '@config.factory', '@key.repository', '@logger.factory']
+
+  ai_engine_system_instructions.storage:
+    class: Drupal\ai_engine_system_instructions\Service\SystemInstructionsStorageService
+    arguments: ['@database', '@current_user', '@datetime.time']
+
+  ai_engine_system_instructions.manager:
+    class: Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService
+    arguments: ['@ai_engine_system_instructions.api', '@ai_engine_system_instructions.storage', '@logger.factory', '@keyvalue', '@datetime.time']
+
+  ai_engine_system_instructions.access_check:
+    class: Drupal\ai_engine_system_instructions\Access\SystemInstructionsAccessCheck
+    arguments: ['@config.factory']
+    tags:
+      - { name: access_check, applies_to: _system_instructions_access }

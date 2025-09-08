@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_engine_chat\Access;
+namespace Drupal\ai_engine_system_instructions\Access;
 
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -40,12 +40,12 @@ class SystemInstructionsAccessCheck implements AccessInterface {
    */
   public function access(AccountInterface $account) {
     // Check if user has the required permission or is a site administrator.
-    if (!$account->hasPermission('manage ai chat system instructions') && !$account->hasPermission('administer site configuration')) {
+    if (!$account->hasPermission('manage ai system instructions') && !$account->hasPermission('administer site configuration')) {
       return AccessResult::forbidden('User lacks required permission.');
     }
 
     // Check if the feature is enabled in configuration.
-    $config = $this->configFactory->get('ai_engine_chat.settings');
+    $config = $this->configFactory->get('ai_engine_system_instructions.settings');
     if (!$config->get('system_instructions_enabled')) {
       return AccessResult::forbidden('System instruction modification is not enabled.')
         ->addCacheableDependency($config);

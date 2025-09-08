@@ -1,18 +1,1 @@
-services:
-  ai_engine_chat.system_instructions_api:
-    class: Drupal\ai_engine_chat\Service\SystemInstructionsApiService
-    arguments: ['@http_client', '@config.factory', '@key.repository', '@logger.factory']
-
-  ai_engine_chat.system_instructions_storage:
-    class: Drupal\ai_engine_chat\Service\SystemInstructionsStorageService
-    arguments: ['@database', '@current_user', '@datetime.time']
-
-  ai_engine_chat.system_instructions_manager:
-    class: Drupal\ai_engine_chat\Service\SystemInstructionsManagerService
-    arguments: ['@ai_engine_chat.system_instructions_api', '@ai_engine_chat.system_instructions_storage', '@logger.factory', '@keyvalue', '@datetime.time']
-
-  ai_engine_chat.system_instructions_access_check:
-    class: Drupal\ai_engine_chat\Access\SystemInstructionsAccessCheck
-    arguments: ['@config.factory']
-    tags:
-      - { name: access_check, applies_to: _system_instructions_access }
+services: {}

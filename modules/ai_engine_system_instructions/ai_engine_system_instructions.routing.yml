@@ -1,0 +1,43 @@
+# System Instructions Settings
+ai_engine_system_instructions.settings:
+  path: '/admin/config/ai-engine/system-instructions/settings'
+  defaults:
+    _form: '\Drupal\ai_engine_system_instructions\Form\SystemInstructionsSettingsForm'
+    _title: 'System Instructions Settings'
+  requirements:
+    _permission: 'administer ai engine'
+
+# System Instructions Management
+ai_engine_system_instructions.form:
+  path: '/admin/config/ai-engine/system-instructions'
+  defaults:
+    _form: '\Drupal\ai_engine_system_instructions\Form\SystemInstructionsForm'
+    _title: 'System Instructions'
+  requirements:
+    _system_instructions_access: 'TRUE'
+
+ai_engine_system_instructions.versions:
+  path: '/admin/config/ai-engine/system-instructions/versions'
+  defaults:
+    _controller: '\Drupal\ai_engine_system_instructions\Controller\SystemInstructionsController::versionHistory'
+    _title: 'System Instructions Version History'
+  requirements:
+    _system_instructions_access: 'TRUE'
+
+ai_engine_system_instructions.view:
+  path: '/admin/config/ai-engine/system-instructions/versions/{version}'
+  defaults:
+    _controller: '\Drupal\ai_engine_system_instructions\Controller\SystemInstructionsController::viewVersion'
+    _title: 'View System Instructions Version'
+  requirements:
+    _system_instructions_access: 'TRUE'
+    version: \d+
+
+ai_engine_system_instructions.revert:
+  path: '/admin/config/ai-engine/system-instructions/revert/{version}'
+  defaults:
+    _form: '\Drupal\ai_engine_system_instructions\Form\SystemInstructionsRevertForm'
+    _title: 'Revert System Instructions'
+  requirements:
+    _system_instructions_access: 'TRUE'
+    version: \d+

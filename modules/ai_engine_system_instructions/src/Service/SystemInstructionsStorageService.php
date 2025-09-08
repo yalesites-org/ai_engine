@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_engine_chat\Service;
+namespace Drupal\ai_engine_system_instructions\Service;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Database\Connection;

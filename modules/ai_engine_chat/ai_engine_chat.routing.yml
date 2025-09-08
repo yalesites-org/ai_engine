@@ -14,38 +14,3 @@ ai_engine_chat.settings:
     _title: 'Chat Settings'
   requirements:
     _permission: 'manage ai engine settings'
-
-# System Instructions Management
-ai_engine_chat.system_instructions_form:
-  path: '/admin/config/ai-engine/chat/system-instructions'
-  defaults:
-    _form: '\Drupal\ai_engine_chat\Form\SystemInstructionsForm'
-    _title: 'System Instructions'
-  requirements:
-    _system_instructions_access: 'TRUE'
-
-ai_engine_chat.system_instructions_versions:
-  path: '/admin/config/ai-engine/chat/system-instructions/versions'
-  defaults:
-    _controller: '\Drupal\ai_engine_chat\Controller\SystemInstructionsController::versionHistory'
-    _title: 'System Instructions Version History'
-  requirements:
-    _system_instructions_access: 'TRUE'
-
-ai_engine_chat.system_instructions_view:
-  path: '/admin/config/ai-engine/chat/system-instructions/versions/{version}'
-  defaults:
-    _controller: '\Drupal\ai_engine_chat\Controller\SystemInstructionsController::viewVersion'
-    _title: 'View System Instructions Version'
-  requirements:
-    _system_instructions_access: 'TRUE'
-    version: \d+
-
-ai_engine_chat.system_instructions_revert:
-  path: '/admin/config/ai-engine/chat/system-instructions/revert/{version}'
-  defaults:
-    _form: '\Drupal\ai_engine_chat\Form\SystemInstructionsRevertForm'
-    _title: 'Revert System Instructions'
-  requirements:
-    _system_instructions_access: 'TRUE'
-    version: \d+

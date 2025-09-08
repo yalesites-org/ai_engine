@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_engine_chat\Service;
+namespace Drupal\ai_engine_system_instructions\Service;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
@@ -62,7 +62,7 @@ class SystemInstructionsApiService {
     $this->httpClient = $http_client;
     $this->configFactory = $config_factory;
     $this->keyRepository = $key_repository;
-    $this->logger = $logger_factory->get('ai_engine_chat');
+    $this->logger = $logger_factory->get('ai_engine_system_instructions');
   }
 
   /**
@@ -195,7 +195,7 @@ class SystemInstructionsApiService {
    *   Configuration array or NULL if incomplete or disabled.
    */
   protected function getApiConfig(): ?array {
-    $config = $this->configFactory->get('ai_engine_chat.settings');
+    $config = $this->configFactory->get('ai_engine_system_instructions.settings');
 
     // Check if the feature is enabled.
     if (!$config->get('system_instructions_enabled')) {

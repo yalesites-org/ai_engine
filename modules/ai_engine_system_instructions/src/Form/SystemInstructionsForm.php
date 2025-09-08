@@ -1,8 +1,8 @@
 <?php
 
-namespace Drupal\ai_engine_chat\Form;
+namespace Drupal\ai_engine_system_instructions\Form;
 
-use Drupal\ai_engine_chat\Service\SystemInstructionsManagerService;
+use Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -17,7 +17,7 @@ class SystemInstructionsForm extends FormBase {
   /**
    * The system instructions manager.
    *
-   * @var \Drupal\ai_engine_chat\Service\SystemInstructionsManagerService
+   * @var \Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService
    */
   protected $instructionsManager;
 
@@ -31,7 +31,7 @@ class SystemInstructionsForm extends FormBase {
   /**
    * Constructs a SystemInstructionsForm.
    *
-   * @param \Drupal\ai_engine_chat\Service\SystemInstructionsManagerService $instructions_manager
+   * @param \Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService $instructions_manager
    *   The system instructions manager.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The configuration factory.
@@ -46,7 +46,7 @@ class SystemInstructionsForm extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('ai_engine_chat.system_instructions_manager'),
+      $container->get('ai_engine_system_instructions.manager'),
       $container->get('config.factory')
     );
   }
@@ -55,7 +55,7 @@ class SystemInstructionsForm extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'ai_engine_chat_system_instructions_form';
+    return 'ai_engine_system_instructions_form';
   }
 
   /**
@@ -65,7 +65,7 @@ class SystemInstructionsForm extends FormBase {
    *   The maximum instructions length.
    */
   protected function getMaxInstructionsLength(): int {
-    return $this->configFactory->get('ai_engine_chat.settings')->get('system_instructions_max_length') ?: 4000;
+    return $this->configFactory->get('ai_engine_system_instructions.settings')->get('system_instructions_max_length') ?: 4000;
   }
 
   /**
@@ -75,14 +75,14 @@ class SystemInstructionsForm extends FormBase {
    *   The warning threshold.
    */
   protected function getWarningThreshold(): int {
-    return $this->configFactory->get('ai_engine_chat.settings')->get('system_instructions_warning_threshold') ?: 3500;
+    return $this->configFactory->get('ai_engine_system_instructions.settings')->get('system_instructions_warning_threshold') ?: 3500;
   }
 
   /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $form['#attached']['library'][] = 'ai_engine_chat/system_instructions';
+    $form['#attached']['library'][] = 'ai_engine_system_instructions/system_instructions';
 
     // Create a wrapper for AJAX updates.
     $form['form_wrapper'] = [
@@ -185,7 +185,7 @@ class SystemInstructionsForm extends FormBase {
       '#markup' => $this->t('<p><strong>Current version:</strong> @version | <strong>Total versions:</strong> @total | <a href="@history_url">View version history</a></p>', [
         '@version' => $current['version'] ?: $this->t('None'),
         '@total' => $stats['total_versions'],
-        '@history_url' => Url::fromRoute('ai_engine_chat.system_instructions_versions')->toString(),
+        '@history_url' => Url::fromRoute('ai_engine_system_instructions.versions')->toString(),
       ]),
     ];
 
@@ -238,7 +238,7 @@ class SystemInstructionsForm extends FormBase {
     ];
 
     // Add JavaScript for character counting.
-    $form['#attached']['drupalSettings']['aiEngineChatSystemInstructions'] = [
+    $form['#attached']['drupalSettings']['aiEngineSystemInstructions'] = [
       'maxLength' => $max_length,
       'warningThreshold' => $this->getWarningThreshold(),
     ];

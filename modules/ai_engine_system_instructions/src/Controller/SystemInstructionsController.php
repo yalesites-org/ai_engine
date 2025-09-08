@@ -1,8 +1,8 @@
 <?php
 
-namespace Drupal\ai_engine_chat\Controller;
+namespace Drupal\ai_engine_system_instructions\Controller;
 
-use Drupal\ai_engine_chat\Service\SystemInstructionsManagerService;
+use Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Url;
@@ -18,7 +18,7 @@ class SystemInstructionsController extends ControllerBase {
   /**
    * The system instructions manager.
    *
-   * @var \Drupal\ai_engine_chat\Service\SystemInstructionsManagerService
+   * @var \Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService
    */
   protected $instructionsManager;
 
@@ -39,7 +39,7 @@ class SystemInstructionsController extends ControllerBase {
   /**
    * Constructs a SystemInstructionsController.
    *
-   * @param \Drupal\ai_engine_chat\Service\SystemInstructionsManagerService $instructions_manager
+   * @param \Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService $instructions_manager
    *   The system instructions manager.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter.
@@ -57,7 +57,7 @@ class SystemInstructionsController extends ControllerBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('ai_engine_chat.system_instructions_manager'),
+      $container->get('ai_engine_system_instructions.manager'),
       $container->get('date.formatter'),
       $container->get('entity_type.manager')->getStorage('user')
     );
@@ -71,7 +71,7 @@ class SystemInstructionsController extends ControllerBase {
    */
   public function versionHistory() {
     // Check if the feature is enabled.
-    $config = $this->config('ai_engine_chat.settings');
+    $config = $this->config('ai_engine_system_instructions.settings');
     if (!$config->get('system_instructions_enabled')) {
       throw new AccessDeniedHttpException('System instruction modification is not enabled.');
     }
@@ -99,7 +99,7 @@ class SystemInstructionsController extends ControllerBase {
     if (empty($versions)) {
       $build['empty'] = [
         '#markup' => $this->t('No system instructions found. <a href="@url">Create the first version</a>.', [
-          '@url' => Url::fromRoute('ai_engine_chat.system_instructions_form')->toString(),
+          '@url' => Url::fromRoute('ai_engine_system_instructions.form')->toString(),
         ]),
       ];
       return $build;
@@ -129,14 +129,14 @@ class SystemInstructionsController extends ControllerBase {
       if (!$version['is_active']) {
         $actions['revert'] = [
           'title' => $this->t('Revert'),
-          'url' => Url::fromRoute('ai_engine_chat.system_instructions_revert', ['version' => $version['version']]),
+          'url' => Url::fromRoute('ai_engine_system_instructions.revert', ['version' => $version['version']]),
           'attributes' => ['class' => ['button', 'button--small']],
         ];
       }
 
       $actions['view'] = [
         'title' => $this->t('View'),
-        'url' => Url::fromRoute('ai_engine_chat.system_instructions_view', ['version' => $version['version']]),
+        'url' => Url::fromRoute('ai_engine_system_instructions.view', ['version' => $version['version']]),
         'attributes' => ['class' => ['button', 'button--small']],
       ];
 
@@ -177,7 +177,7 @@ class SystemInstructionsController extends ControllerBase {
    */
   public function viewVersion(int $version) {
     // Check if the feature is enabled.
-    $config = $this->config('ai_engine_chat.settings');
+    $config = $this->config('ai_engine_system_instructions.settings');
     if (!$config->get('system_instructions_enabled')) {
       throw new AccessDeniedHttpException('System instruction modification is not enabled.');
     }
@@ -228,7 +228,7 @@ class SystemInstructionsController extends ControllerBase {
       $build['header']['revert'] = [
         '#type' => 'link',
         '#title' => $this->t('Revert to this version'),
-        '#url' => Url::fromRoute('ai_engine_chat.system_instructions_revert', ['version' => $version]),
+        '#url' => Url::fromRoute('ai_engine_system_instructions.revert', ['version' => $version]),
         '#attributes' => [
           'class' => ['button', 'button--primary'],
           'onclick' => 'return confirm("' . $this->t('Are you sure you want to revert to version @version?', ['@version' => $version]) . '")',
@@ -256,7 +256,7 @@ class SystemInstructionsController extends ControllerBase {
     $build['actions']['back'] = [
       '#type' => 'link',
       '#title' => $this->t('Back to version history'),
-      '#url' => Url::fromRoute('ai_engine_chat.system_instructions_versions'),
+      '#url' => Url::fromRoute('ai_engine_system_instructions.versions'),
       '#attributes' => ['class' => ['button']],
     ];
 
