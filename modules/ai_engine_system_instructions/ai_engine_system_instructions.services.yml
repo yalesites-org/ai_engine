@@ -7,9 +7,12 @@ services:
     class: Drupal\ai_engine_system_instructions\Service\SystemInstructionsStorageService
     arguments: ['@database', '@current_user', '@datetime.time']
 
+  ai_engine_system_instructions.text_format_detection:
+    class: Drupal\ai_engine_system_instructions\Service\TextFormatDetectionService
+
   ai_engine_system_instructions.manager:
     class: Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService
-    arguments: ['@ai_engine_system_instructions.api', '@ai_engine_system_instructions.storage', '@logger.factory', '@keyvalue', '@datetime.time']
+    arguments: ['@ai_engine_system_instructions.api', '@ai_engine_system_instructions.storage', '@logger.factory', '@keyvalue', '@datetime.time', '@ai_engine_system_instructions.text_format_detection']
 
   ai_engine_system_instructions.access_check:
     class: Drupal\ai_engine_system_instructions\Access\SystemInstructionsAccessCheck

@@ -50,6 +50,13 @@ class SystemInstructionsManagerService {
   protected $time;
 
   /**
+   * The text format detection service.
+   *
+   * @var \Drupal\ai_engine_system_instructions\Service\TextFormatDetectionService
+   */
+  protected $textFormatDetection;
+
+  /**
    * API sync cooldown period in seconds.
    */
   const API_SYNC_COOLDOWN = 10;
@@ -67,13 +74,16 @@ class SystemInstructionsManagerService {
    *   The key-value store factory.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
+   * @param \Drupal\ai_engine_system_instructions\Service\TextFormatDetectionService $text_format_detection
+   *   The text format detection service.
    */
-  public function __construct(SystemInstructionsApiService $api_service, SystemInstructionsStorageService $storage_service, LoggerChannelFactoryInterface $logger_factory, KeyValueFactoryInterface $key_value_factory, TimeInterface $time) {
+  public function __construct(SystemInstructionsApiService $api_service, SystemInstructionsStorageService $storage_service, LoggerChannelFactoryInterface $logger_factory, KeyValueFactoryInterface $key_value_factory, TimeInterface $time, TextFormatDetectionService $text_format_detection) {
     $this->apiService = $api_service;
     $this->storageService = $storage_service;
     $this->logger = $logger_factory->get('ai_engine_system_instructions');
     $this->keyValueStore = $key_value_factory->get('ai_engine_system_instructions');
     $this->time = $time;
+    $this->textFormatDetection = $text_format_detection;
   }
 
   /**
@@ -144,7 +154,7 @@ class SystemInstructionsManagerService {
     }
 
     // Format and create new version with system user (ID 1 for API sync).
-    $formatted_instructions = $this->formatInstructionsText($api_instructions);
+    $formatted_instructions = $this->textFormatDetection->formatText($api_instructions);
     $new_version = $this->storageService->createVersion(
       $formatted_instructions,
       'Synced from API',
@@ -245,7 +255,7 @@ class SystemInstructionsManagerService {
     }
 
     return [
-      'instructions' => $this->formatInstructionsText($active['instructions']),
+      'instructions' => $this->textFormatDetection->formatText($active['instructions']),
       'version' => (int) $active['version'],
       'synced' => $sync_result['success'],
       'sync_error' => $sync_result['success'] ? '' : $sync_result['message'],
@@ -324,53 +334,6 @@ class SystemInstructionsManagerService {
     ];
   }
 
-  /**
-   * Format system instructions text for better readability.
-   *
-   * This method adds proper line breaks and formatting to make the text
-   * more readable in the textarea interface.
-   *
-   * @param string $text
-   *   The raw text from the API.
-   *
-   * @return string
-   *   The formatted text with proper line breaks.
-   */
-  protected function formatInstructionsText(string $text): string {
-    // Remove any existing excessive whitespace.
-    $text = trim($text);
-
-    // Add line breaks after common patterns.
-    $patterns = [
-      // Add double line breaks before main headings (## )
-      '/  ## /' => "\n\n## ",
-      // Add double line breaks before sub-headings (### )
-      '/  ### /' => "\n\n### ",
-      // Add single line break before list items that follow text.
-      '/  - /' => "\n- ",
-      // Add line breaks after numbered list items.
-      '/(\d+\. [^0-9]+)  /' => "$1\n",
-      // Add line breaks after sentences that end with periods and are
-      // followed by capital letters.
-      '/(\.)  ([A-Z])/' => "$1\n\n$2",
-      // Add line breaks after colons when followed by capital letters
-      // (for section introductions).
-      '/(:)  ([A-Z][^:]+)/' => "$1\n$2",
-    ];
-
-    foreach ($patterns as $pattern => $replacement) {
-      $text = preg_replace($pattern, $replacement, $text);
-    }
-
-    // Clean up any triple or more line breaks.
-    $text = preg_replace('/\n{3,}/', "\n\n", $text);
-
-    // Ensure there's proper spacing around headings.
-    $text = preg_replace('/\n(#{1,3} )/', "\n\n$1", $text);
-    $text = preg_replace('/(#{1,3} [^\n]+)\n([^#\n])/', "$1\n\n$2", $text);
-
-    return trim($text);
-  }
 
   /**
    * Get the storage service.
