@@ -12,7 +12,7 @@ services:
 
   ai_engine_system_instructions.manager:
     class: Drupal\ai_engine_system_instructions\Service\SystemInstructionsManagerService
-    arguments: ['@ai_engine_system_instructions.api', '@ai_engine_system_instructions.storage', '@logger.factory', '@keyvalue', '@datetime.time', '@ai_engine_system_instructions.text_format_detection']
+    arguments: ['@ai_engine_system_instructions.api', '@ai_engine_system_instructions.storage', '@logger.factory', '@keyvalue', '@datetime.time', '@ai_engine_system_instructions.text_format_detection', '@current_user']
 
   ai_engine_system_instructions.access_check:
     class: Drupal\ai_engine_system_instructions\Access\SystemInstructionsAccessCheck

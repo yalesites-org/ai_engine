@@ -5,6 +5,7 @@ namespace Drupal\ai_engine_system_instructions\Service;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\KeyValueStore\KeyValueFactoryInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
@@ -57,6 +58,13 @@ class SystemInstructionsManagerService {
   protected $textFormatDetection;
 
   /**
+   * The current user.
+   *
+   * @var \Drupal\Core\Session\AccountProxyInterface
+   */
+  protected $currentUser;
+
+  /**
    * API sync cooldown period in seconds.
    */
   const API_SYNC_COOLDOWN = 10;
@@ -76,14 +84,17 @@ class SystemInstructionsManagerService {
    *   The time service.
    * @param \Drupal\ai_engine_system_instructions\Service\TextFormatDetectionService $text_format_detection
    *   The text format detection service.
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
+   *   The current user.
    */
-  public function __construct(SystemInstructionsApiService $api_service, SystemInstructionsStorageService $storage_service, LoggerChannelFactoryInterface $logger_factory, KeyValueFactoryInterface $key_value_factory, TimeInterface $time, TextFormatDetectionService $text_format_detection) {
+  public function __construct(SystemInstructionsApiService $api_service, SystemInstructionsStorageService $storage_service, LoggerChannelFactoryInterface $logger_factory, KeyValueFactoryInterface $key_value_factory, TimeInterface $time, TextFormatDetectionService $text_format_detection, AccountProxyInterface $current_user) {
     $this->apiService = $api_service;
     $this->storageService = $storage_service;
     $this->logger = $logger_factory->get('ai_engine_system_instructions');
     $this->keyValueStore = $key_value_factory->get('ai_engine_system_instructions');
     $this->time = $time;
     $this->textFormatDetection = $text_format_detection;
+    $this->currentUser = $current_user;
   }
 
   /**
@@ -163,6 +174,10 @@ class SystemInstructionsManagerService {
 
     $this->logger->info('System instructions synced from API. New version: @version', [
       '@version' => $new_version,
+      'action' => 'sync_from_api',
+      'instructions_length' => strlen($formatted_instructions),
+      'created_by' => 1,
+      'source' => 'api_sync',
     ]);
 
     return [
@@ -186,19 +201,48 @@ class SystemInstructionsManagerService {
    *   Array with 'success' (bool), 'message' (string), 'version' (int).
    */
   public function saveInstructions(string $instructions, string $notes = ''): array {
+    $user_id = $this->currentUser->id();
+    $user_name = $this->currentUser->getDisplayName();
+    $current_active = $this->storageService->getActiveInstructions();
+    $old_version = $current_active['version'] ?? NULL;
+    $instructions_length = strlen($instructions);
+    
+    $this->logger->info('User initiated save system instructions', [
+      'user_id' => $user_id,
+      'user_name' => $user_name,
+      'instructions_length' => $instructions_length,
+      'notes' => $notes,
+      'current_version' => $old_version,
+    ]);
+
     // First, check if instructions are different from current version.
     if (!$this->storageService->areInstructionsDifferent($instructions)) {
+      $this->logger->info('No changes detected in system instructions save attempt', [
+        'user_id' => $user_id,
+        'user_name' => $user_name,
+        'current_version' => $old_version,
+      ]);
+
       return [
         'success' => TRUE,
         'local_success' => TRUE,
         'api_success' => TRUE,
         'message' => 'No changes detected. Instructions not saved.',
-        'version' => $this->storageService->getActiveInstructions()['version'] ?? NULL,
+        'version' => $old_version,
       ];
     }
 
     // Create local version first.
     $new_version = $this->storageService->createVersion($instructions, $notes);
+
+    $this->logger->info('Local system instructions version created', [
+      'user_id' => $user_id,
+      'user_name' => $user_name,
+      'old_version' => $old_version,
+      'new_version' => $new_version,
+      'instructions_length' => $instructions_length,
+      'notes' => $notes,
+    ]);
 
     // Try to push to API.
     $api_result = $this->apiService->setSystemInstructions($instructions);
@@ -206,6 +250,10 @@ class SystemInstructionsManagerService {
     if (!$api_result['success']) {
       $this->logger->error('Failed to save system instructions to API: @error', [
         '@error' => $api_result['error'],
+        'user_id' => $user_id,
+        'user_name' => $user_name,
+        'new_version' => $new_version,
+        'instructions_length' => $instructions_length,
       ]);
 
       return [
@@ -220,6 +268,11 @@ class SystemInstructionsManagerService {
 
     $this->logger->info('System instructions saved successfully. Version: @version', [
       '@version' => $new_version,
+      'user_id' => $user_id,
+      'user_name' => $user_name,
+      'old_version' => $old_version,
+      'instructions_length' => $instructions_length,
+      'action' => 'save_instructions',
     ]);
 
     return [
@@ -272,17 +325,47 @@ class SystemInstructionsManagerService {
    *   Array with 'success' (bool) and 'message' (string).
    */
   public function revertToVersion(int $version): array {
+    $user_id = $this->currentUser->id();
+    $user_name = $this->currentUser->getDisplayName();
+    $current_active = $this->storageService->getActiveInstructions();
+    $current_version = $current_active['version'] ?? NULL;
+
+    $this->logger->info('User initiated revert to system instructions version', [
+      'user_id' => $user_id,
+      'user_name' => $user_name,
+      'current_version' => $current_version,
+      'target_version' => $version,
+      'action' => 'revert_version',
+    ]);
+
     $target_version = $this->storageService->getVersion($version);
 
     if (!$target_version) {
+      $this->logger->warning('Attempted to revert to non-existent system instructions version', [
+        'user_id' => $user_id,
+        'user_name' => $user_name,
+        'target_version' => $version,
+        'current_version' => $current_version,
+      ]);
+
       return [
         'success' => FALSE,
         'message' => 'Version ' . $version . ' not found.',
       ];
     }
 
+    $instructions_length = strlen($target_version['instructions']);
+
     // Set as active version.
     $this->storageService->setActiveVersion($version);
+
+    $this->logger->info('Local system instructions version reverted', [
+      'user_id' => $user_id,
+      'user_name' => $user_name,
+      'old_version' => $current_version,
+      'new_version' => $version,
+      'instructions_length' => $instructions_length,
+    ]);
 
     // Push to API.
     $api_result = $this->apiService->setSystemInstructions($target_version['instructions']);
@@ -290,6 +373,10 @@ class SystemInstructionsManagerService {
     if (!$api_result['success']) {
       $this->logger->error('Failed to revert system instructions in API: @error', [
         '@error' => $api_result['error'],
+        'user_id' => $user_id,
+        'user_name' => $user_name,
+        'target_version' => $version,
+        'instructions_length' => $instructions_length,
       ]);
 
       return [
@@ -300,6 +387,11 @@ class SystemInstructionsManagerService {
 
     $this->logger->info('System instructions reverted to version: @version', [
       '@version' => $version,
+      'user_id' => $user_id,
+      'user_name' => $user_name,
+      'old_version' => $current_version,
+      'instructions_length' => $instructions_length,
+      'action' => 'revert_completed',
     ]);
 
     return [
