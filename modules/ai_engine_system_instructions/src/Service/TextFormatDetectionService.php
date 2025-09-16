@@ -4,10 +4,10 @@ namespace Drupal\ai_engine_system_instructions\Service;
 
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
+use League\CommonMark\Extension\CommonMark\Node\Block\Heading;
+use League\CommonMark\Extension\CommonMark\Node\Block\ListBlock;
+use League\CommonMark\Extension\CommonMark\Node\Block\ListItem;
 use League\CommonMark\Node\Block\Document;
-use League\CommonMark\Node\Block\Heading;
-use League\CommonMark\Node\Block\ListBlock;
-use League\CommonMark\Node\Block\ListItem;
 use League\CommonMark\Node\Block\Paragraph;
 use League\CommonMark\Node\Inline\Text;
 use League\CommonMark\Node\Node;
@@ -32,18 +32,25 @@ class TextFormatDetectionService {
   protected $parser;
 
   /**
+   * The CommonMark environment.
+   *
+   * @var \League\CommonMark\Environment\Environment
+   */
+  protected $environment;
+
+  /**
    * Constructor.
    */
   public function __construct() {
     // Create CommonMark environment with core extensions
-    $environment = new Environment();
-    $environment->addExtension(new CommonMarkCoreExtension());
+    $this->environment = new Environment();
+    $this->environment->addExtension(new CommonMarkCoreExtension());
     
-    $this->parser = new MarkdownParser($environment);
+    $this->parser = new MarkdownParser($this->environment);
   }
 
   /**
-   * Detect the format of the given text using regex patterns.
+   * Detect the format of the given text using CommonMark parsing.
    *
    * @param string $text
    *   The text to analyze.
@@ -61,10 +68,41 @@ class TextFormatDetectionService {
       ];
     }
 
-    // Simple regex-based detection for markdown patterns
-    $markdown_score = $this->calculateMarkdownScore($text);
+    // First try parsing without preprocessing
+    try {
+      $document = $this->parser->parse($text);
+      $markdown_score = $this->calculateMarkdownScoreFromAST($document);
+      
+      // If we get a good score, use it
+      if ($markdown_score > 0.3) {
+        return [
+          'format' => self::FORMAT_MARKDOWN,
+          'confidence' => $markdown_score,
+        ];
+      }
+    } catch (\Exception $e) {
+      // Continue to fallback methods
+    }
+
+    // If that didn't work well, try with minimal preprocessing
+    try {
+      $preprocessed_text = $this->preprocessOnelineMarkdown($text);
+      $document = $this->parser->parse($preprocessed_text);
+      $markdown_score = $this->calculateMarkdownScoreFromAST($document);
+      
+      if ($markdown_score > 0.3) {
+        return [
+          'format' => self::FORMAT_MARKDOWN,
+          'confidence' => $markdown_score,
+        ];
+      }
+    } catch (\Exception $e) {
+      // Continue to regex fallback
+    }
+
+    // Final fallback to regex detection
+    $markdown_score = $this->calculateMarkdownScoreFromRegex($text);
     
-    // If markdown score is above threshold, consider it markdown
     if ($markdown_score > 0.3) {
       return [
         'format' => self::FORMAT_MARKDOWN,
@@ -74,12 +112,83 @@ class TextFormatDetectionService {
 
     return [
       'format' => self::FORMAT_PLAIN_TEXT,
-      'confidence' => 1.0 - $markdown_score,
+      'confidence' => 1.0,
     ];
   }
 
   /**
-   * Calculate a score indicating how likely the text is markdown (0-1).
+   * Preprocess text to handle oneliner markdown issues.
+   *
+   * @param string $text
+   *   The text to preprocess.
+   *
+   * @return string
+   *   Preprocessed text with better line breaks for markdown parsing.
+   */
+  protected function preprocessOnelineMarkdown(string $text): string {
+    // Very conservative preprocessing - only fix the most obvious issues
+    
+    // Only add breaks before headers when they're clearly separate sections
+    // Pattern: "word.# Header" or "word.## Header" where it's clearly a new section
+    $text = preg_replace('/([.!?])\s*(#{1,6}\s+[A-Z])/', "$1\n\n$2", $text);
+    
+    // Handle the very specific case where headers are jammed together with no space
+    // Like "word.#Header" or "word.##Header" 
+    $text = preg_replace('/(\w\.)(#{1,6}[A-Z])/', "$1\n\n$2", $text);
+    
+    // Only break for list items that are clearly at the start of new sections
+    // This is much more conservative - only after punctuation followed by clear list markers
+    $text = preg_replace('/([.!?])\s*(\n?)(-\s+[A-Z])/', "$1\n$3", $text);
+    
+    return $text;
+  }
+
+  /**
+   * Calculate markdown score from CommonMark AST.
+   *
+   * @param \League\CommonMark\Node\Block\Document $document
+   *   The parsed document.
+   *
+   * @return float
+   *   Score from 0 (definitely not markdown) to 1 (definitely markdown).
+   */
+  protected function calculateMarkdownScoreFromAST(Document $document): float {
+    $score = 0.0;
+    $total_nodes = 0;
+    $markdown_nodes = 0;
+
+    // Walk through the AST and count markdown-specific elements
+    $walker = $document->walker();
+    
+    while ($event = $walker->next()) {
+      $node = $event->getNode();
+      $total_nodes++;
+      
+      if ($node instanceof Heading) {
+        $markdown_nodes++;
+        $score += 0.4; // Headers are strong indicators
+      } 
+      elseif ($node instanceof ListBlock) {
+        $markdown_nodes++;
+        $score += 0.3; // Lists are good indicators
+      }
+      elseif ($node instanceof ListItem) {
+        $score += 0.1; // List items add to the score
+      }
+      // Note: We don't count Paragraph as markdown since plain text also has paragraphs
+    }
+
+    // If we have a good ratio of markdown nodes, boost the score
+    if ($total_nodes > 0) {
+      $markdown_ratio = $markdown_nodes / $total_nodes;
+      $score += $markdown_ratio * 0.3;
+    }
+
+    return min($score, 1.0);
+  }
+
+  /**
+   * Fallback regex-based markdown detection.
    *
    * @param string $text
    *   The text to analyze.
@@ -87,16 +196,16 @@ class TextFormatDetectionService {
    * @return float
    *   Score from 0 (definitely not markdown) to 1 (definitely markdown).
    */
-  protected function calculateMarkdownScore(string $text): float {
+  protected function calculateMarkdownScoreFromRegex(string $text): float {
     $score = 0.0;
 
-    // Check for markdown headers (including compressed ones)
+    // Check for markdown headers
     $header_matches = preg_match_all('/#{1,6}\s+/', $text);
     if ($header_matches) {
       $score += min($header_matches * 0.3, 0.6);
     }
 
-    // Check for markdown lists (including compressed ones)
+    // Check for markdown lists
     $list_matches = preg_match_all('/\s*[-*+]\s+/', $text);
     if ($list_matches) {
       $score += min($list_matches * 0.1, 0.4);
@@ -156,43 +265,243 @@ class TextFormatDetectionService {
 
 
   /**
-   * Format text assuming it's markdown by adding proper spacing.
+   * Format text as markdown using CommonMark parsing and reconstruction.
    *
    * @param string $text
    *   The markdown text to format.
    *
    * @return string
-   *   The formatted markdown text with proper spacing but preserved syntax.
+   *   The formatted markdown text with proper spacing and structure.
    */
   protected function formatMarkdownText(string $text): string {
     $text = trim($text);
 
-    // Step 1: Fix headers that are compressed with previous text
-    // Pattern: "word## Header" or "word.## Header"
-    $text = preg_replace('/([a-zA-Z.,!?])(\#{1,6}\s+)/', "$1\n\n$2", $text);
-    $text = preg_replace('/([a-zA-Z.,!?])\s+(\#{1,6}\s+)/', "$1\n\n$2", $text);
+    if (empty($text)) {
+      return '';
+    }
 
-    // Step 2: Fix headers that have content flowing after them
-    // Break when we have a capitalized word followed by lowercase words (indicates new sentence)
-    $text = preg_replace('/(\#{1,6}\s+[^#\n]+?)\s+([A-Z][a-z]+\s+[a-z])/', "$1\n\n$2", $text);
+    // Try a simple approach first: use regex to fix the most common oneliner issues
+    $simple_formatted = $this->simpleMarkdownFormat($text);
+    
+    try {
+      // Then try CommonMark parsing if the simple approach helps
+      $document = $this->parser->parse($simple_formatted);
+      $formatted_text = $this->reconstructMarkdownFromAST($document);
+      
+      // Only use the AST result if it's significantly better
+      if (strlen($formatted_text) > strlen($simple_formatted) * 0.8) {
+        return trim($formatted_text);
+      }
+    } catch (\Exception $e) {
+      // If parsing fails, use the simple formatted version
+    }
 
-    // Step 3: Fix list items that come directly after text or colons
-    // Pattern: "word: - Item" or "word. - Item" or "word - Item"
-    $text = preg_replace('/([a-zA-Z.,!?:])(-\s+)/', "$1\n$2", $text);
-    $text = preg_replace('/([a-zA-Z.,!?:])\s(-\s+)/', "$1\n$2", $text);
-    $text = preg_replace('/([a-zA-Z.,!?:])\s+(-\s+)/', "$1\n$2", $text);
+    return trim($simple_formatted);
+  }
 
-    // Step 4: Skip general sentence breaking for now - it's too complex and breaks headers
-    // Instead, rely on headers and lists being formatted correctly by other steps
+  /**
+   * Simple markdown formatting using regex patterns.
+   *
+   * @param string $text
+   *   The text to format.
+   *
+   * @return string
+   *   The formatted text.
+   */
+  protected function simpleMarkdownFormat(string $text): string {
+    // Step 1: Fix headers that are jammed against previous text
+    $text = preg_replace('/([.!?])(\s*)#/', "$1\n\n#", $text);
+    $text = preg_replace('/([a-zA-Z0-9])#/', "$1\n\n#", $text);
+    
+    // Step 2: Fix headers that have bullet points embedded in them
+    // Pattern: "## Header- bullet content" should become "## Header\n- bullet content"
+    $text = preg_replace('/(#{1,6}\s+[^#\n]*?)(-\s+)/', "$1\n\n$2", $text);
+    
+    // Step 3: Fix headers that appear after bullet point content
+    // Pattern: "- bullet content...## Header" should become "- bullet content...\n\n## Header"
+    $text = preg_replace('/([.!?"\'])\s*(#{1,6}\s+)/', "$1\n\n$2", $text);
+    
+    // Step 4: Fix headers that run into the next header
+    // Pattern: "...content## NextHeader" should become "...content\n\n## NextHeader"
+    $text = preg_replace('/([a-zA-Z0-9.!?])\s*(#{1,6}\s+)/', "$1\n\n$2", $text);
+    
+    // Step 5: Fix obvious list items that start new sections after punctuation
+    $text = preg_replace('/([.!?])\s*(-\s+[A-Z])/', "$1\n\n$2", $text);
+    
+    // Step 6: Clean up multiple spaces (but preserve intentional formatting)
+    $text = preg_replace('/[ \t]+/', ' ', $text);
+    
+    // Step 7: Clean up excessive line breaks
+    $text = preg_replace('/\n{3,}/', "\n\n", $text);
+    
+    return $text;
+  }
 
-    // Step 5: Handle numbered lists (after sentence breaks to avoid conflicts)
-    // Handle both "1. Item" and "1.Item" patterns
-    $text = preg_replace('/([a-zA-Z.,!?:])\s*(\d+\.)(\s*)([A-Z])/', "$1\n$2 $4", $text);
+  /**
+   * Reconstruct markdown from CommonMark AST with proper formatting.
+   *
+   * @param \League\CommonMark\Node\Block\Document $document
+   *   The parsed document.
+   *
+   * @return string
+   *   The reconstructed markdown with proper spacing.
+   */
+  protected function reconstructMarkdownFromAST(Document $document): string {
+    $output = '';
+    $last_block_type = null;
+    
+    // Process top-level children of the document
+    foreach ($document->children() as $child) {
+      if ($child instanceof Heading) {
+        // Add spacing before headers (except at the very beginning)
+        if ($output) {
+          $output .= "\n\n";
+        }
+        
+        // Add the header
+        $level = $child->getLevel();
+        $header_text = $this->extractDirectTextFromNode($child);
+        $output .= str_repeat('#', $level) . ' ' . $header_text . "\n";
+        
+        $last_block_type = 'heading';
+      }
+      elseif ($child instanceof ListBlock) {
+        // Add spacing before lists
+        if ($output && substr($output, -1) !== "\n") {
+          $output .= "\n";
+        }
+        if ($last_block_type !== 'list') {
+          $output .= "\n";
+        }
+        
+        $output .= $this->reconstructListBlock($child);
+        $last_block_type = 'list';
+      }
+      elseif ($child instanceof Paragraph) {
+        // Add spacing before paragraphs
+        if ($output) {
+          $output .= "\n\n";
+        }
+        
+        $paragraph_text = $this->extractDirectTextFromNode($child);
+        $output .= $paragraph_text . "\n";
+        
+        $last_block_type = 'paragraph';
+      }
+    }
+    
+    // Clean up extra whitespace and normalize line breaks
+    $output = preg_replace('/[ \t]+/', ' ', $output);
+    $output = preg_replace('/\n{3,}/', "\n\n", $output);
+    
+    return trim($output);
+  }
 
-    // Step 6: Clean up excessive whitespace but preserve intentional formatting
+  /**
+   * Reconstruct a list block with proper formatting.
+   *
+   * @param \League\CommonMark\Node\Block\ListBlock $listBlock
+   *   The list block to reconstruct.
+   *
+   * @return string
+   *   The reconstructed list.
+   */
+  protected function reconstructListBlock(ListBlock $listBlock): string {
+    $output = '';
+    $listData = $listBlock->getListData();
+    $counter = $listData->start ?? 1;
+    
+    foreach ($listBlock->children() as $listItem) {
+      if ($listItem instanceof ListItem) {
+        // Add list item marker
+        if ($listData->type === 'ordered') {
+          $output .= $counter . '. ';
+          $counter++;
+        } else {
+          $output .= '- ';
+        }
+        
+        // Get list item content
+        $item_text = $this->extractDirectTextFromNode($listItem);
+        $output .= $item_text . "\n";
+      }
+    }
+    
+    return $output;
+  }
+
+  /**
+   * Extract direct text content from a node without traversing into block children.
+   *
+   * @param \League\CommonMark\Node\Node $node
+   *   The node to extract text from.
+   *
+   * @return string
+   *   The extracted text content.
+   */
+  protected function extractDirectTextFromNode(Node $node): string {
+    $text = '';
+    
+    // Walk through the node but stop at block boundaries
+    $walker = $node->walker();
+    
+    while ($event = $walker->next()) {
+      $current_node = $event->getNode();
+      $is_entering = $event->isEntering();
+      
+      // Skip block-level children that should be processed separately
+      if ($is_entering && $current_node !== $node) {
+        if ($current_node instanceof Heading || 
+            $current_node instanceof ListBlock || 
+            $current_node instanceof ListItem ||
+            $current_node instanceof Paragraph) {
+          // Skip processing of nested block elements
+          $walker->resumeAt($current_node, false);
+          continue;
+        }
+      }
+      
+      if ($current_node instanceof Text) {
+        $content = $current_node->getLiteral();
+        $text .= $content;
+      }
+    }
+    
+    return trim($text);
+  }
+
+  /**
+   * Extract text content from a CommonMark node (legacy method).
+   *
+   * @param \League\CommonMark\Node\Node $node
+   *   The node to extract text from.
+   *
+   * @return string
+   *   The extracted text content.
+   */
+  protected function extractTextFromNode(Node $node): string {
+    return $this->extractDirectTextFromNode($node);
+  }
+
+  /**
+   * Fallback markdown formatting using regex (when CommonMark parsing fails).
+   *
+   * @param string $text
+   *   The markdown text to format.
+   *
+   * @return string
+   *   The formatted markdown text.
+   */
+  protected function formatMarkdownTextFallback(string $text): string {
+    $text = trim($text);
+
+    // Use the preprocessing step to fix oneliner issues
+    $text = $this->preprocessOnelineMarkdown($text);
+
+    // Clean up excessive whitespace but preserve intentional formatting
     $text = preg_replace('/[ \t]+/', ' ', $text);
 
-    // Step 7: Clean up excessive line breaks (more than 2)
+    // Clean up excessive line breaks (more than 2)
     $text = preg_replace('/\n{3,}/', "\n\n", $text);
 
     return trim($text);
@@ -206,38 +515,49 @@ class TextFormatDetectionService {
    *   The plain text to format.
    *
    * @return string
-   *   The formatted plain text.
+   *   The formatted plain text with improved readability.
    */
   protected function formatPlainText(string $text): string {
-    // Remove excessive whitespace
     $text = trim($text);
+    
+    if (empty($text)) {
+      return '';
+    }
     
     // Replace multiple spaces with single spaces
     $text = preg_replace('/[ \t]+/', ' ', $text);
     
     // Add line breaks after sentences followed by capital letters
-    $text = preg_replace('/([.!?])\s+([A-Z])/', "$1\n\n$2", $text);
+    // This helps break up run-on sentences that might be compressed
+    $text = preg_replace('/([.!?])\s+([A-Z][a-z])/', "$1\n\n$2", $text);
     
-    // Break up very long lines (over 100 characters) at natural break points
+    // Add line breaks after colons when followed by capital letters (common in instructions)
+    $text = preg_replace('/([:])\s+([A-Z][a-z])/', "$1\n$2", $text);
+    
+    // Break up very long lines (over 120 characters) at natural break points
     $lines = explode("\n", $text);
     $formatted_lines = [];
     
     foreach ($lines as $line) {
-      if (strlen($line) > 100) {
+      $line = trim($line);
+      
+      if (strlen($line) > 120) {
         // Try to break at sentence boundaries first
         $sentences = preg_split('/([.!?])\s+/', $line, -1, PREG_SPLIT_DELIM_CAPTURE);
         $current_line = '';
         
         for ($i = 0; $i < count($sentences); $i += 2) {
-          $sentence = $sentences[$i];
+          $sentence = $sentences[$i] ?? '';
           $delimiter = $sentences[$i + 1] ?? '';
           
-          if (strlen($current_line . $sentence . $delimiter) > 100 && !empty($current_line)) {
+          $potential_line = $current_line . $sentence . $delimiter;
+          
+          if (strlen($potential_line) > 120 && !empty($current_line)) {
             $formatted_lines[] = trim($current_line);
             $current_line = $sentence . $delimiter;
           }
           else {
-            $current_line .= $sentence . $delimiter;
+            $current_line = $potential_line;
           }
         }
         
@@ -246,14 +566,19 @@ class TextFormatDetectionService {
         }
       }
       else {
-        $formatted_lines[] = $line;
+        if (!empty($line)) {
+          $formatted_lines[] = $line;
+        }
       }
     }
     
     $text = implode("\n", $formatted_lines);
     
-    // Clean up excessive line breaks
+    // Clean up excessive line breaks (more than 2)
     $text = preg_replace('/\n{3,}/', "\n\n", $text);
+    
+    // Ensure proper spacing around sections
+    $text = preg_replace('/\n\n+/', "\n\n", $text);
     
     return trim($text);
   }
