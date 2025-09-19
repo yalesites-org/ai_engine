@@ -153,8 +153,12 @@ class SystemInstructionsManagerService {
 
     $api_instructions = $api_result['data'];
 
-    // Check if these instructions are different from current active version.
-    if (!$this->storageService->areInstructionsDifferent($api_instructions)) {
+    // Unescape and format the API instructions to restore proper structure.
+    $unescaped_instructions = $this->textFormatDetection->unescapeMarkdownFromApi($api_instructions);
+    $formatted_instructions = $this->textFormatDetection->formatUnescapedMarkdown($unescaped_instructions);
+
+    // Check if these instructions are different from current active version (using unescaped content).
+    if (!$this->storageService->areInstructionsDifferent($formatted_instructions)) {
       return [
         'success' => TRUE,
         'local_success' => TRUE,
@@ -163,9 +167,6 @@ class SystemInstructionsManagerService {
         'version' => $this->storageService->getActiveInstructions()['version'] ?? NULL,
       ];
     }
-
-    // Format and create new version with system user (ID 1 for API sync).
-    $formatted_instructions = $this->textFormatDetection->formatText($api_instructions);
     $new_version = $this->storageService->createVersion(
       $formatted_instructions,
       'Synced from API',
@@ -244,8 +245,11 @@ class SystemInstructionsManagerService {
       'notes' => $notes,
     ]);
 
+    // Escape markdown for API transmission to preserve formatting.
+    $escaped_instructions = $this->textFormatDetection->escapeMarkdownForApi($instructions);
+    
     // Try to push to API.
-    $api_result = $this->apiService->setSystemInstructions($instructions);
+    $api_result = $this->apiService->setSystemInstructions($escaped_instructions);
 
     if (!$api_result['success']) {
       $this->logger->error('Failed to save system instructions to API: @error', [
@@ -367,8 +371,11 @@ class SystemInstructionsManagerService {
       'instructions_length' => $instructions_length,
     ]);
 
+    // Escape markdown for API transmission to preserve formatting.
+    $escaped_instructions = $this->textFormatDetection->escapeMarkdownForApi($target_version['instructions']);
+    
     // Push to API.
-    $api_result = $this->apiService->setSystemInstructions($target_version['instructions']);
+    $api_result = $this->apiService->setSystemInstructions($escaped_instructions);
 
     if (!$api_result['success']) {
       $this->logger->error('Failed to revert system instructions in API: @error', [

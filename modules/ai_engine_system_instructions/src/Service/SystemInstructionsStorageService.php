@@ -234,7 +234,12 @@ class SystemInstructionsStorageService {
       return TRUE;
     }
 
-    return trim($active['instructions']) !== trim($instructions);
+    // Format both sides consistently for comparison
+    $text_format_service = \Drupal::service('ai_engine_system_instructions.text_format_detection');
+    $active_formatted = $text_format_service->formatText($active['instructions']);
+    $input_formatted = $text_format_service->formatText($instructions);
+
+    return trim($active_formatted) !== trim($input_formatted);
   }
 
   /**

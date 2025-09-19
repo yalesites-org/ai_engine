@@ -280,23 +280,61 @@ class TextFormatDetectionService {
       return '';
     }
 
-    // Try a simple approach first: use regex to fix the most common oneliner issues
-    $simple_formatted = $this->simpleMarkdownFormat($text);
+    // Check if this looks like compressed/oneliner content (headers jammed together, etc.)
+    $is_compressed = $this->isCompressedMarkdown($text);
     
-    try {
-      // Then try CommonMark parsing if the simple approach helps
-      $document = $this->parser->parse($simple_formatted);
-      $formatted_text = $this->reconstructMarkdownFromAST($document);
+    if ($is_compressed) {
+      // Use the regex-based approach for compressed content
+      $simple_formatted = $this->simpleMarkdownFormat($text);
       
-      // Only use the AST result if it's significantly better
-      if (strlen($formatted_text) > strlen($simple_formatted) * 0.8) {
-        return trim($formatted_text);
+      try {
+        // Then try CommonMark parsing if the simple approach helps
+        $document = $this->parser->parse($simple_formatted);
+        $formatted_text = $this->reconstructMarkdownFromAST($document);
+        
+        // Only use the AST result if it's significantly better
+        if (strlen($formatted_text) > strlen($simple_formatted) * 0.8) {
+          return trim($formatted_text);
+        }
+      } catch (\Exception $e) {
+        // If parsing fails, use the simple formatted version
       }
-    } catch (\Exception $e) {
-      // If parsing fails, use the simple formatted version
-    }
 
-    return trim($simple_formatted);
+      return trim($simple_formatted);
+    } else {
+      // For properly formatted content, just use CommonMark directly
+      return $this->formatUnescapedMarkdown($text);
+    }
+  }
+
+  /**
+   * Check if markdown appears to be compressed/oneliner format.
+   *
+   * @param string $text
+   *   The text to check.
+   *
+   * @return bool
+   *   TRUE if the text appears to be compressed markdown.
+   */
+  protected function isCompressedMarkdown(string $text): bool {
+    // Look for signs of compressed markdown:
+    // 1. Headers immediately following other content without line breaks
+    $has_jammed_headers = preg_match('/[a-zA-Z0-9.!?]\s*#{1,6}\s+/', $text);
+    
+    // 2. Headers with embedded bullet points
+    $has_embedded_bullets = preg_match('/(#{1,6}\s+[^#\n]*?)(-\s+)/', $text);
+    
+    // 3. Very long lines with multiple markdown elements
+    $lines = explode("\n", $text);
+    $has_long_mixed_lines = false;
+    foreach ($lines as $line) {
+      if (strlen($line) > 200 && preg_match('/#{1,6}.*-\s+/', $line)) {
+        $has_long_mixed_lines = true;
+        break;
+      }
+    }
+    
+    return $has_jammed_headers || $has_embedded_bullets || $has_long_mixed_lines;
   }
 
   /**
@@ -449,13 +487,12 @@ class TextFormatDetectionService {
       $current_node = $event->getNode();
       $is_entering = $event->isEntering();
       
-      // Skip block-level children that should be processed separately
+      // Skip only certain block-level children that should be processed separately
       if ($is_entering && $current_node !== $node) {
         if ($current_node instanceof Heading || 
             $current_node instanceof ListBlock || 
-            $current_node instanceof ListItem ||
-            $current_node instanceof Paragraph) {
-          // Skip processing of nested block elements
+            $current_node instanceof ListItem) {
+          // Skip processing of nested block elements (but allow paragraphs for content)
           $walker->resumeAt($current_node, false);
           continue;
         }
@@ -581,6 +618,106 @@ class TextFormatDetectionService {
     $text = preg_replace('/\n\n+/', "\n\n", $text);
     
     return trim($text);
+  }
+
+  /**
+   * Escape markdown structure for safe API transmission.
+   *
+   * This preserves the original markdown formatting by escaping newlines
+   * and preserving indentation so it can be reconstructed perfectly.
+   *
+   * @param string $markdown
+   *   The markdown text to escape.
+   *
+   * @return string
+   *   The escaped markdown suitable for API transmission.
+   */
+  public function escapeMarkdownForApi(string $markdown): string {
+    $markdown = trim($markdown);
+    
+    if (empty($markdown)) {
+      return '';
+    }
+    
+    // Escape newlines to preserve line structure
+    $escaped = str_replace("\n", "\\n", $markdown);
+    
+    // Escape carriage returns if present
+    $escaped = str_replace("\r", "\\r", $escaped);
+    
+    // Escape tab characters to preserve indentation
+    $escaped = str_replace("\t", "\\t", $escaped);
+    
+    return $escaped;
+  }
+
+  /**
+   * Unescape markdown structure after API retrieval.
+   *
+   * This reconstructs the original markdown formatting by unescaping
+   * newlines and restoring proper structure.
+   *
+   * @param string $escaped_markdown
+   *   The escaped markdown from the API.
+   *
+   * @return string
+   *   The unescaped markdown with proper formatting.
+   */
+  public function unescapeMarkdownFromApi(string $escaped_markdown): string {
+    $escaped_markdown = trim($escaped_markdown);
+    
+    if (empty($escaped_markdown)) {
+      return '';
+    }
+    
+    // Unescape newlines to restore line structure
+    $unescaped = str_replace("\\n", "\n", $escaped_markdown);
+    
+    // Unescape carriage returns if present
+    $unescaped = str_replace("\\r", "\r", $unescaped);
+    
+    // Unescape tab characters to restore indentation
+    $unescaped = str_replace("\\t", "\t", $unescaped);
+    
+    return $unescaped;
+  }
+
+  /**
+   * Format markdown that has been properly unescaped from API.
+   *
+   * This is a simpler version that works with properly structured markdown
+   * rather than trying to reconstruct formatting from compressed text.
+   *
+   * @param string $markdown
+   *   The properly structured markdown text.
+   *
+   * @return string
+   *   The formatted markdown with any minor cleanup applied.
+   */
+  public function formatUnescapedMarkdown(string $markdown): string {
+    $markdown = trim($markdown);
+    
+    if (empty($markdown)) {
+      return '';
+    }
+    
+    // Just use CommonMark to parse and validate the structure
+    try {
+      $document = $this->parser->parse($markdown);
+      $formatted_text = $this->reconstructMarkdownFromAST($document);
+      
+      if (!empty($formatted_text)) {
+        return trim($formatted_text);
+      }
+    } catch (\Exception $e) {
+      // If parsing fails, return the original with basic cleanup
+    }
+    
+    // Fallback: basic cleanup without aggressive processing
+    $markdown = preg_replace('/[ \t]+/', ' ', $markdown);
+    $markdown = preg_replace('/\n{3,}/', "\n\n", $markdown);
+    
+    return trim($markdown);
   }
 
 }
