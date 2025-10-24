@@ -1,7 +1,7 @@
 name: AI Engine Chat
 type: module
 description: Enables an AI powered question and answer chat service.
-core_version_requirement: '^9 || ^10'
+core_version_requirement: ^9 || ^10 || ^11
 package: 'AI Engine'
 dependencies:
   - ai_engine

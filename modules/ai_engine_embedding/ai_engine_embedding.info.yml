@@ -2,7 +2,7 @@ name: 'AI Engine Embedding Management'
 type: module
 description: 'Tools for managing documents in a vector database'
 package: 'AI Engine'
-core_version_requirement: ^9.4 || ^10
+core_version_requirement: ^9.4 || ^10 || ^11
 dependencies:
   - ai_engine
   - ai_engine_feed

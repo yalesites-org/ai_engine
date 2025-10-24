@@ -1,7 +1,7 @@
 name: 'AI Engine Feed'
 type: module
 description: 'Provides JSON feeds of website content for AI ingestion.'
-core_version_requirement: ^9 || ^10
+core_version_requirement: ^9 || ^10 || ^11
 package: 'AI Engine'
 version: 1.0
 project: 'ai_engine_feed'
