@@ -1,5 +1,5 @@
 {
     "name": "yalesites-org/ai_engine",
     "description": "Transform Drupal websites into AI-powered platforms",
-    "type": "drupal-module",
+    "type": "drupal-module"
 }
