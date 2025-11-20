@@ -126,7 +126,7 @@ Each item in the `data` array contains different fields depending on the entity 
 | `documentContent` | string | **Nodes**: Fully rendered content using the default display mode (includes all processed fields)<br>**Media**: Empty string |
 | `documentDescription` | string | **Media only**: File metadata (alt text, description, or title from the file)<br>**Nodes**: Not present |
 | `metaTags` | string | AI-specific metadata tags for categorization |
-| `metaDescription` | string | AI-specific description for enhanced context |
+| `metaDescription` | string | AI-specific description for enhanced context. Supports `:hidden:` delimiter to separate indexed content from display-only content (see Content Processing section) |
 | `dateCreated` | string | ISO 8601 formatted creation timestamp |
 | `dateModified` | string | ISO 8601 formatted last modified timestamp |
 | `dateProcessed` | string | ISO 8601 formatted timestamp of when the API response was generated |
@@ -257,7 +257,7 @@ print(f"Retrieved {len(all_content)} total items")
 ### Content Processing
 
 1. **Node Content Processing**
-   - `documentContent` contains fully rendered HTML
+   - `documentContent` contains content HTML
    - May include embedded media, links, and formatting
    - Strip HTML tags for plain text processing
    - Preserve structure for enhanced context
@@ -274,6 +274,11 @@ print(f"Retrieved {len(all_content)} total items")
 3. **Metadata Usage**
    - `metaTags`: Use for categorization and filtering
    - `metaDescription`: Provides curated summary for AI context
+     - **Hidden Content Delimiter**: The `:hidden:` delimiter allows content editors to separate indexed content from display-only content
+     - Content before `:hidden:` should be indexed for search and embeddings
+     - Content after `:hidden:` is returned in the API response but should NOT be indexed
+     - Use case: Provide additional context or instructions to AI systems that shouldn't affect search results
+     - Example: `"Product overview for search engines:hidden:Internal notes: pricing may vary by region"`
    - `documentType`: Identify content type for specialized processing
 
 4. **URL Canonicalization**
