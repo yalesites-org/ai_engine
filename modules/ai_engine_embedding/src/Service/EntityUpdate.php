@@ -250,12 +250,14 @@ class EntityUpdate {
    */
   public function upsertDocument(EntityInterface $entity) {
     $config = $this->configFactory->get('ai_engine_embedding.settings');
+    $docType = $config->get('chunking_output_strategy') ??
+      self::CHUNKING_STRATEGY_DEFAULT;
     $entityTypeId = $entity->getEntityTypeId();
     $route_params = [
       'entityType' => $entityTypeId,
       'id' => $entity->id(),
     ];
-    $data = $this->getData("upsert", $config, $route_params, "");
+    $data = $this->getData("upsert", $config, $route_params, $docType);
     $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
     $response = $this->sendJsonPost($endpoint, $data);
 
