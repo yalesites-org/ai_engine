@@ -257,7 +257,7 @@ class EntityUpdate {
       'entityType' => $entityTypeId,
       'id' => $entity->id(),
     ];
-    $data = $this->getData("upsert", $config, $route_params, $docType);
+    $data = $this->getData("upsert", $config, $route_params, "", $docType);
     $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
     $response = $this->sendJsonPost($endpoint, $data);
 
