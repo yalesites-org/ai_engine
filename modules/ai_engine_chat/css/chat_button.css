@@ -39,3 +39,10 @@
 body:has(.ed11y-element) .ai-engine-chat-button {
   bottom: calc(1% + 60px);
 }
+
+/* Was decided not to display the floating button on mobile */
+@media (max-width: 992px) {
+  .ai-engine-chat-button, .ai-engine-chat-button a {
+    display: none;
+  }
+}
