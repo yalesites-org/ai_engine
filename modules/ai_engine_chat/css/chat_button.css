@@ -1,10 +1,19 @@
+/* Hidden by default on mobile devices */
 .ai-engine-chat-button {
-  position: fixed;
-  bottom: 1rem;
-  right: 1%;
-  z-index: 1000;
+  display: none;
+}
 
-  a {
+/* Show and style button on desktop viewports only */
+@media (min-width: 993px) {
+  .ai-engine-chat-button {
+    display: block;
+    position: fixed;
+    bottom: 1rem;
+    right: 1%;
+    z-index: 750;
+  }
+
+  .ai-engine-chat-button a {
     color: #e5efec;
     background-color: #00356B;
     padding: 1em;
@@ -24,18 +33,19 @@
     }
   }
 
-  svg {
+  .ai-engine-chat-button svg {
     margin-right: 0.25em;
     font-size: 3.15rem;
     width: 3.75rem;
   }
 
-  span {
+  .ai-engine-chat-button span {
     max-width: 5rem;
     line-height: 1.4;
   }
-}
 
-body:has(.ed11y-element) .ai-engine-chat-button {
-  bottom: calc(1% + 60px);
+  /* Adjust position when ed11y accessibility checker is present */
+  body:has(.ed11y-element) .ai-engine-chat-button {
+    bottom: calc(1% + 60px);
+  }
 }
