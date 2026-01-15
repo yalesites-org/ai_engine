@@ -13,6 +13,7 @@ function ai_engine_chat_theme() {
     'ai_engine_chat_button' => [
       'variables' => [
         'button_text' => NULL,
+        'icon_class' => NULL,
       ],
     ],
   ];
@@ -53,6 +54,7 @@ function ai_engine_chat_page_bottom(array &$page_bottom) {
     $page_bottom[] = [
       '#theme' => 'ai_engine_chat_button',
       '#button_text' => $config->get('floating_button_text'),
+      '#icon_class' => $config->get('floating_button_icon') ?? 'fa-comments',
     ];
   }
 }

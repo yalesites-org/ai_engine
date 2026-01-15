@@ -50,7 +50,18 @@ class AiEngineChatAdmin extends ConfigFormBase {
     $form['floating_button_text'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Floating button text'),
-      '#default_value' => $config->get('floating_button_text') ?? $this->t('Ask Yale Chat'),
+      '#default_value' => $config->get('floating_button_text') ?? $this->t('Beacon Chat'),
+      '#required' => TRUE,
+    ];
+    $form['floating_button_icon'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Floating button icon'),
+      '#description' => $this->t('Select the icon to display on the floating chat button. Changes take effect immediately after saving.'),
+      '#options' => [
+        'fa-comments' => $this->t('Comments (default)'),
+        'fa-sparkles' => $this->t('Sparkles'),
+      ],
+      '#default_value' => $config->get('floating_button_icon') ?? 'fa-comments',
       '#required' => TRUE,
     ];
     $form['azure_base_url'] = [
@@ -70,6 +81,7 @@ class AiEngineChatAdmin extends ConfigFormBase {
       ->set('enable', $form_state->getValue('enable'))
       ->set('floating_button', $form_state->getValue('floating_button'))
       ->set('floating_button_text', $form_state->getValue('floating_button_text'))
+      ->set('floating_button_icon', $form_state->getValue('floating_button_icon'))
       ->set('azure_base_url', $form_state->getValue('azure_base_url'))
       ->save();
     parent::submitForm($form, $form_state);
