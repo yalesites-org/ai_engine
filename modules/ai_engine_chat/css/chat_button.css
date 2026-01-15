@@ -33,7 +33,8 @@
     }
   }
 
-  .ai-engine-chat-button svg {
+  .ai-engine-chat-button svg,
+  .ai-engine-chat-button i {
     margin-right: 0.25em;
     font-size: 3.15rem;
     width: 3.75rem;
