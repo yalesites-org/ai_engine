@@ -17,7 +17,7 @@ You can customize the icon displayed on the floating chat button to better align
 **Configuration path:** `/admin/config/ai-engine/chat-admin`
 
 **Available icon options:**
-- Comments (default) - General chat/discussion icon
+- Chat (default) - General chat/discussion icon
 - Sparkles - Emphasizes AI-powered assistant
 - Message - Direct messaging style
 - Robot - Emphasizes AI/automation
