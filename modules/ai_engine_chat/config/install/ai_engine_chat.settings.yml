@@ -1,6 +1,7 @@
 enable: false
 floating_button: false
-floating_button_text: 'Ask Yale Chat'
+floating_button_text: 'Beacon Chat'
+floating_button_icon: 'fa-comments'
 azure_base_url: ''
 initial_questions: []
 disclaimer: ''
