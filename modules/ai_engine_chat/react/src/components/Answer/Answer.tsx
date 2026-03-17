@@ -207,7 +207,7 @@ export const Answer = ({
             )}
             <img className={styles.chatMessageAIMessageAvatar} src={aiAvatar} alt="Yale Logo" />
 
-                <Stack.Item grow>
+                <Stack.Item grow styles={{ root: { width: '100%' } }}>
                     <ReactMarkdown
                         linkTarget="_blank"
                         remarkPlugins={[remarkGfm, supersub]}
