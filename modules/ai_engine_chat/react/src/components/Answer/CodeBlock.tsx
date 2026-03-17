@@ -24,17 +24,22 @@ const CodeBlock = ({ children, node, ...rest }: ComponentPropsWithoutRef<'pre'> 
 
     if (!navigator.clipboard) return;
 
-    await navigator.clipboard.writeText(codeContent);
-    setCopied(true);
+    try {
+      await navigator.clipboard.writeText(codeContent);
+      setCopied(true);
 
-    timerRef.current = setTimeout(() => {
-      setCopied(false);
-    }, 2000);
+      timerRef.current = setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch {
+      // Clipboard write failed (permission denied or other error) — no-op
+    }
   };
 
   return (
     <div className={styles.codeBlockWrapper}>
       <button
+        type="button"
         className={styles.copyButton}
         onClick={handleCopy}
         aria-label={copied ? 'Code copied' : 'Copy code'}
