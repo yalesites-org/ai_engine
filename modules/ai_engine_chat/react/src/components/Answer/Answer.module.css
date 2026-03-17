@@ -41,6 +41,7 @@
     white-space: normal;
     word-wrap: break-word;
     max-width: 800px;
+    width: 100%;
 }
 
 @media screen and (min-width:800px) {
