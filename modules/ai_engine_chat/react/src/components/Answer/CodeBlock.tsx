@@ -28,6 +28,9 @@ const CodeBlock = ({ children, node, ...rest }: ComponentPropsWithoutRef<'pre'> 
       await navigator.clipboard.writeText(codeContent);
       setCopied(true);
 
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
       timerRef.current = setTimeout(() => {
         setCopied(false);
       }, 2000);
