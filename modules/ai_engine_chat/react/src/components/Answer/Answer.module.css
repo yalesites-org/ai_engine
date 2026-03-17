@@ -13,6 +13,10 @@
     transition: all 200ms ease-in-out;
 }
 
+.answerContainer :global(.ms-StackItem) {
+    width: 100%;
+}
+
 @media screen and (min-width:800px) {
     .answerContainer {
         padding: 1rem 1rem 2rem 4.5rem;
