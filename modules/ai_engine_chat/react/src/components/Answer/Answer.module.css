@@ -13,6 +13,10 @@
     transition: all 200ms ease-in-out;
 }
 
+.answerContainer :global(.ms-StackItem) {
+    width: 100%;
+}
+
 @media screen and (min-width:800px) {
     .answerContainer {
         padding: 1rem 1rem 2rem 4.5rem;
@@ -226,4 +230,12 @@
 sup {
     font-size: 1rem;
     line-height: 1;
+}
+
+.answerText code:not(pre > code) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9em;
+    background: #f0f0f0;
+    border-radius: 3px;
+    padding: 0.2em 0.4em;
 }

@@ -14,6 +14,7 @@ import remarkGfm from "remark-gfm";
 import supersub from 'remark-supersub'
 import { ThumbDislike20Filled, ThumbLike20Filled } from "@fluentui/react-icons";
 import { XSSAllowTags } from "../../constants/xssAllowTags";
+import CodeBlock from './CodeBlock';
 
 interface Props {
     answer: AskResponse;
@@ -212,6 +213,7 @@ export const Answer = ({
                         remarkPlugins={[remarkGfm, supersub]}
                         children={parsedAnswer.markdownFormatText}
                         className={styles.answerText}
+                        components={{ pre: CodeBlock }}
                     />
                 </Stack.Item>
             </Stack>
