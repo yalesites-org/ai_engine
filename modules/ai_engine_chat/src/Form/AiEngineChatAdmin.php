@@ -42,6 +42,28 @@ class AiEngineChatAdmin extends ConfigFormBase {
       '#default_value' => $config->get('enable') ?? FALSE,
       '#description' => $this->t('Enable or disable chat service across the site. Chat can be launched by using the href="#launch-chat" on any link.'),
     ];
+    $form['floating_button'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable floating chat button'),
+      '#default_value' => $config->get('floating_button') ?? FALSE,
+    ];
+    $form['floating_button_text'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Floating button text'),
+      '#default_value' => $config->get('floating_button_text') ?? $this->t('Beacon Chat'),
+      '#required' => TRUE,
+    ];
+    $form['floating_button_icon'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Floating button icon'),
+      '#description' => $this->t('Select the icon to display on the floating chat button. Changes take effect immediately after saving.'),
+      '#options' => [
+        'fa-comments' => $this->t('Chat (default)'),
+        'fa-sparkles' => $this->t('Sparkles'),
+      ],
+      '#default_value' => $config->get('floating_button_icon') ?? 'fa-comments',
+      '#required' => TRUE,
+    ];
     $form['azure_base_url'] = [
       '#type' => 'url',
       '#title' => $this->t('Azure base URL'),
@@ -57,6 +79,9 @@ class AiEngineChatAdmin extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->config(self::CONFIG_NAME)
       ->set('enable', $form_state->getValue('enable'))
+      ->set('floating_button', $form_state->getValue('floating_button'))
+      ->set('floating_button_text', $form_state->getValue('floating_button_text'))
+      ->set('floating_button_icon', $form_state->getValue('floating_button_icon'))
       ->set('azure_base_url', $form_state->getValue('azure_base_url'))
       ->save();
     parent::submitForm($form, $form_state);
