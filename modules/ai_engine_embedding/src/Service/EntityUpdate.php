@@ -2,18 +2,43 @@
 
 namespace Drupal\ai_engine_embedding\Service;
 
-use Drupal\ai_engine_feed\Service\Sources;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Http\ClientFactory;
 use Drupal\Core\Logger\LoggerChannelInterface;
+use Drupal\ai_engine_feed\Service\Sources;
 use Drupal\metatag\MetatagManager;
 
 /**
  * Service for updating the vector database as content is updated.
  */
 class EntityUpdate {
+  /**
+   * The default chunk size for sending data to the AI Embedding service.
+   *
+   * @var int
+   */
+  const CHUNK_SIZE_DEFAULT = 3000;
+
+  /**
+   * The default chunking strategy for the AI Embedding service.
+   *
+   * @var string
+   */
+  const CHUNKING_STRATEGY_DEFAULT = 'text';
+  const CHUNKING_OUTPUT_STRATEGY_OPTIONS = [
+    self::CHUNKING_STRATEGY_DEFAULT => 'Text',
+    'md' => 'Markdown',
+    'mdh' => 'Markdown Headers',
+  ];
+
+  /**
+   * The allowed entity types for indexing.
+   *
+   * @var array
+   */
+  const ALLOWED_ENTITIES = ['node', 'media'];
 
   /**
    * The configuration factory.
@@ -69,7 +94,7 @@ class EntityUpdate {
     ClientFactory $httpClientFactory,
     ConfigFactoryInterface $configFactory,
     LoggerChannelInterface $logger,
-    MetatagManager $metatagManager
+    MetatagManager $metatagManager,
   ) {
     $this->sources = $sources;
     $this->httpClientFactory = $httpClientFactory;
@@ -110,10 +135,10 @@ class EntityUpdate {
    *   A content entity in Drupal.
    */
   public function update(EntityInterface $entity) {
-    if (!$this->isServiceEnabled() || !$this->isSupportedEntityType($entity)) {
+    if (!$this->isServiceEnabled() || !$this->isSupportedEntityType($entity) || $this->isDrafted($entity)) {
       return;
     }
-    elseif (!$this->isIndexable($entity)) {
+    elseif (!$this->isIndexable($entity) && $this->isNotDrafted($entity)) {
       $this->removeDocument($entity);
     }
     else {
@@ -131,7 +156,7 @@ class EntityUpdate {
    *   A content entity in Drupal.
    */
   public function delete(EntityInterface $entity) {
-    if (!$this->isServiceEnabled() || !$this->isSupportedEntityType($entity)) {
+    if (!$this->isServiceEnabled() || !$this->isSupportedEntityType($entity) || !$this->isNotDrafted($entity)) {
       return;
     }
     $this->removeDocument($entity);
@@ -150,42 +175,63 @@ class EntityUpdate {
    */
   public function addAllDocuments() {
     $config = $this->configFactory->get('ai_engine_embedding.settings');
-    $data = [
-      "action" => "upsert",
-      "doctype" => "text",
-      "service_name" => $config->get('azure_search_service_name'),
-      "index_name" => $config->get('azure_search_service_index'),
-      "data" => "",
-      "data_endpoint" => $this->sources->getContentEndpoint(),
-    ];
-    $httpClient = $this->httpClientFactory->fromOptions([
-      'headers' => [
-        'Content-Type' => 'application/json',
-      ],
-    ]);
-    $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
+    $docType = $config->get('chunking_output_strategy') ??
+      self::CHUNKING_STRATEGY_DEFAULT;
 
-    try {
-      $response = $httpClient->post($endpoint, ['json' => $data]);
+    // Loop through entityTypesToSend and send.
+    foreach (self::ALLOWED_ENTITIES as $entityType) {
+      $data = $this->getData("upsert", $config, ['entityType' => $entityType], "", $docType);
+      $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
+      $response = $this->sendJsonPost($endpoint, $data);
+
+      if (!$response) {
+        $this->logger->notice(
+          'Unable to upsert to vector database. Response not successful. Check the Azure embedding service URL.',
+        );
+        return NULL;
+      }
 
       if ($response->getStatusCode() === 200) {
         $responseData = json_decode($response->getBody()->getContents(), TRUE);
         $this->logger->notice(
-          'Removed node @id from vector database. Service response: @response',
+          'Upserted node @id from vector database. Service response: @response',
           ['@response' => print_r($responseData, TRUE)]
         );
       }
       else {
         $this->logger->notice(
-          'Unable to remove node @id from vector database. POST failed with status code: @code',
+          'Unable to upsert node @id to vector database. POST failed with status code: @code',
           ['@code' => $response->getStatusCode()]
         );
         return NULL;
       }
     }
+  }
+
+  /**
+   * Sends a post request to an endpoint with data.
+   *
+   * @param string $endpoint
+   *   The endpoint to send the data to.
+   * @param array $data
+   *   The data to send.
+   *
+   * @return \Psr\Http\Message\ResponseInterface
+   *   The response from the post request.
+   */
+  protected function sendJsonPost($endpoint, $data) {
+    $httpClient = $this->httpClientFactory->fromOptions([
+      'headers' => [
+        'Content-Type' => 'application/json',
+      ],
+    ]);
+
+    try {
+      return $httpClient->post($endpoint, ['json' => $data]);
+    }
     catch (\Exception $e) {
       $this->logger->error(
-        'An error occurred while upserting document: @error',
+        'An error occurred while posting document: @error',
         ['@error' => $e->getMessage()]
       );
       return NULL;
@@ -204,47 +250,36 @@ class EntityUpdate {
    */
   public function upsertDocument(EntityInterface $entity) {
     $config = $this->configFactory->get('ai_engine_embedding.settings');
+    $docType = $config->get('chunking_output_strategy') ??
+      self::CHUNKING_STRATEGY_DEFAULT;
+    $entityTypeId = $entity->getEntityTypeId();
     $route_params = [
-      'entityType' => $entity->getEntityTypeId(),
+      'entityType' => $entityTypeId,
       'id' => $entity->id(),
     ];
-    $data = [
-      "action" => "upsert",
-      "doctype" => "text",
-      "service_name" => $config->get('azure_search_service_name'),
-      "index_name" => $config->get('azure_search_service_index'),
-      "data" => "",
-      "data_endpoint" => $this->sources->getContentEndpoint($route_params),
-    ];
-    $httpClient = $this->httpClientFactory->fromOptions([
-      'headers' => [
-        'Content-Type' => 'application/json',
-      ],
-    ]);
+    $data = $this->getData("upsert", $config, $route_params, "", $docType);
     $endpoint = $config->get('azure_embedding_service_url') . '/api/upsert';
+    $response = $this->sendJsonPost($endpoint, $data);
 
-    try {
-      $response = $httpClient->post($endpoint, ['json' => $data]);
-
-      if ($response->getStatusCode() === 200) {
-        $responseData = json_decode($response->getBody()->getContents(), TRUE);
-        $this->logger->notice(
-          'Removed node @id from vector database. Service response: @response',
-          ['@id' => $entity->id(), '@response' => print_r($responseData, TRUE)]
-        );
-      }
-      else {
-        $this->logger->notice(
-          'Unable to remove node @id from vector database. POST failed with status code: @code',
-          ['@id' => $entity->id(), '@code' => $response->getStatusCode()]
-        );
-        return NULL;
-      }
+    if ($response === NULL) {
+      $this->logger->notice(
+        'Unable to upsert node @id to vector database. Response not successful. Check the Azure embedding service URL.',
+        ['@id' => $entity->id()]
+      );
+      return NULL;
     }
-    catch (\Exception $e) {
-      $this->logger->error(
-        'An error occurred while upserting document: @error',
-        ['@error' => $e->getMessage()]
+
+    if ($response->getStatusCode() === 200) {
+      $responseData = json_decode($response->getBody()->getContents(), TRUE);
+      $this->logger->notice(
+        'Upserted node @id to vector database. Service response: @response',
+        ['@id' => $entity->id(), '@response' => print_r($responseData, TRUE)]
+      );
+    }
+    else {
+      $this->logger->notice(
+        'Unable to upsert node @id to vector database. POST failed with status code: @code',
+        ['@id' => $entity->id(), '@code' => $response->getStatusCode()]
       );
       return NULL;
     }
@@ -265,35 +300,28 @@ class EntityUpdate {
       "id_list" => [],
       "id_filter_list" => [$this->sources->getSearchIndexId($entity)],
     ];
-    $httpClient = $this->httpClientFactory->fromOptions([
-      'headers' => [
-        'Content-Type' => 'application/json',
-      ],
-    ]);
     $endpoint = $config->get('azure_embedding_service_url') . '/api/deletebyid';
+    $response = $this->sendJsonPost($endpoint, $data);
 
-    try {
-      $response = $httpClient->post($endpoint, ['json' => $data]);
-
-      if ($response->getStatusCode() === 200) {
-        $responseData = json_decode($response->getBody()->getContents(), TRUE);
-        $this->logger->notice(
-          'Removed node @id from vector database. Service response: @response',
-          ['@id' => $entity->id(), '@response' => print_r($responseData, TRUE)]
-        );
-      }
-      else {
-        $this->logger->notice(
-          'Unable to remove node @id from vector database. POST failed with status code: @code',
-          ['@id' => $entity->id(), '@code' => $response->getStatusCode()]
-        );
-        return NULL;
-      }
+    if ($response === NULL) {
+      $this->logger->notice(
+        'Unable to upsert node @id to vector database. Response not successful',
+        ['@id' => $entity->id()]
+      );
+      return NULL;
     }
-    catch (\Exception $e) {
-      $this->logger->error(
-        'An error occurred while deleting document: @error',
-        ['@error' => $e->getMessage()]
+
+    if ($response->getStatusCode() === 200) {
+      $responseData = json_decode($response->getBody()->getContents(), TRUE);
+      $this->logger->notice(
+        'Removed node @id from vector database. Service response: @response',
+        ['@id' => $entity->id(), '@response' => print_r($responseData, TRUE)]
+      );
+    }
+    else {
+      $this->logger->notice(
+        'Unable to remove node @id from vector database. POST failed with status code: @code',
+        ['@id' => $entity->id(), '@code' => $response->getStatusCode()]
       );
       return NULL;
     }
@@ -342,7 +370,29 @@ class EntityUpdate {
    *   TRUE if the entity should be embedded, FALSE otherwise.
    */
   protected function isSupportedEntityType(EntityInterface $entity) {
-    return $entity->getEntityTypeId() === 'node';
+    $entity_type_id = $entity->getEntityTypeId();
+
+    if ($entity_type_id == 'media') {
+      return $this->isSupportedMediaType($entity);
+    }
+    else {
+      return in_array($entity->getEntityTypeId(), self::ALLOWED_ENTITIES);
+    }
+  }
+
+  /**
+   * Checks if an entity is supported by the embedding system.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to check.
+   *
+   * @return bool
+   *   TRUE if the entity should be embedded, FALSE otherwise.
+   */
+  protected function isSupportedMediaType(EntityInterface $entity) {
+    $config = $this->configFactory->get('ai_engine_embedding.settings');
+    $allowed_media_types = $config->get('included_media_types') ?? [];
+    return in_array($entity->bundle(), $allowed_media_types);
   }
 
   /**
@@ -381,6 +431,87 @@ class EntityUpdate {
       return FALSE;
     }
     return TRUE;
+  }
+
+  /**
+   * Get the data to send to the AI Embedding service.
+   *
+   * @param string $action
+   *   The action to perform on the data.
+   * @param object $config
+   *   The configuration object.
+   * @param array $route_params
+   *   An array of route parameters.
+   * @param string $data
+   *   The data to send to the AI Embedding service.
+   * @param string $doctype
+   *   The type of document being sent to the AI Embedding service.
+   *
+   * @return array
+   *   An array of data to send to the AI Embedding service.
+   */
+  protected function getData($action = 'upsert', $config = NULL, $route_params = [], $data = "", $doctype = 'text'): array {
+    $allowed_actions = ['upsert'];
+    if (!$config) {
+      throw new \Exception('Missing configuration object.');
+    }
+
+    if (!in_array($action, $allowed_actions)) {
+      throw new \Exception('Invalid action provided.');
+    }
+
+    $allowed_doctypes = ['text', 'md', 'mdh'];
+
+    if (!in_array($doctype, $allowed_doctypes)) {
+      throw new \Exception('Invalid doctype provided.');
+    }
+
+    $chunk_size = $config->get('azure_chunk_size') ?? self::CHUNK_SIZE_DEFAULT;
+
+    $data_endpoint = "";
+    if ($data == "") {
+      $data_endpoint = $this->sources->getContentEndpoint($route_params);
+    }
+
+    return [
+      "action" => $action,
+      "doctype" => $doctype,
+      "service_name" => $config->get('azure_search_service_name'),
+      "index_name" => $config->get('azure_search_service_index'),
+      "data" => $data,
+      "data_endpoint" => $data_endpoint,
+      "chunk_size" => $chunk_size,
+    ];
+  }
+
+  /**
+   * Check if the entity is not in a draft state.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to check.
+   *
+   * @return bool
+   *   TRUE if the entity is not in a draft state, FALSE otherwise.
+   */
+  protected function isNotDrafted($entity) {
+    if ($entity->hasField('moderation_state')) {
+      $moderation_state = $entity->get('moderation_state')->value;
+      return $moderation_state != 'draft';
+    }
+    return $entity->isPublished();
+  }
+
+  /**
+   * Check if the entity is in a draft state.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to check.
+   *
+   * @return bool
+   *   TRUE if the entity is in a draft state, FALSE otherwise.
+   */
+  protected function isDrafted($entity) {
+    return !$this->isNotDrafted($entity);
   }
 
 }

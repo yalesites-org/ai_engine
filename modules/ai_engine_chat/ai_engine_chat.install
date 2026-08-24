@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the AI Engine Chat module.
+ */
+
+/**
+ * Initialize button_icon configuration for existing installations.
+ */
+function ai_engine_chat_update_9001() {
+  $config = \Drupal::configFactory()->getEditable('ai_engine_chat.settings');
+  if (!$config->get('floating_button_icon')) {
+    $config->set('floating_button_icon', 'fa-comments')->save();
+  }
+}

@@ -2,14 +2,15 @@
 
 namespace Drupal\ai_engine_feed\Service;
 
-use Drupal\ai_engine_feed\ApiLinkBuilderTrait;
-use Drupal\ai_engine_metadata\AiMetadataManager;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Render\RendererInterface;
+use Drupal\ai_engine_feed\ApiLinkBuilderTrait;
+use Drupal\ai_engine_feed\ContentFeedManager;
+use Drupal\ai_engine_metadata\AiMetadataManager;
 use Drupal\node\NodeInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -89,6 +90,13 @@ class Sources {
   protected $requestStack;
 
   /**
+   * The Content Feed Plugin Manager.
+   *
+   * @var \Drupal\ai_engine_feed\ContentFeedManager
+   */
+  protected $contentFeedManager;
+
+  /**
    * Constructs a new Sources object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
@@ -101,6 +109,12 @@ class Sources {
    *   The request stack.
    * @param \Drupal\ai_engine_metadata\AiMetadataManager $ai_metadata_manager
    *   The AI metadata manager.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
+   *   The entity.
+   * @param \Drupal\Core\Config\ConfigFactory $configFactory
+   *   The configuration factory.
+   * @param \Drupal\ai_engine_feed\ContentFeedManager $contentFeedManager
+   *   The content feed manager data output service.
    */
   public function __construct(
     EntityTypeManagerInterface $entityTypeManager,
@@ -110,6 +124,7 @@ class Sources {
     AiMetadataManager $ai_metadata_manager,
     EntityFieldManagerInterface $entityFieldManager,
     ConfigFactory $configFactory,
+    ContentFeedManager $contentFeedManager,
   ) {
     $this->entityTypeManager = $entityTypeManager;
     $this->logger = $logger;
@@ -118,6 +133,7 @@ class Sources {
     $this->aiMetadataManager = $ai_metadata_manager;
     $this->entityFieldManager = $entityFieldManager;
     $this->configFactory = $configFactory;
+    $this->contentFeedManager = $contentFeedManager;
   }
 
   /**
@@ -136,24 +152,12 @@ class Sources {
   public function getContent(array $params = []): array {
     // Query and format a list of entity data.
     $ids = $this->queryEntities($params);
-    $entities = $this->entityTypeManager->getStorage('node')->loadMultiple($ids);
+    $entityType = $params['entityType'] ?? 'node';
+    $entities = $this->entityTypeManager->getStorage($entityType)->loadMultiple($ids);
     $entityData = [];
     foreach ($entities as $entity) {
-      /** @var \Drupal\node\Entity\Node $entity */
-      $entityData[] = [
-        'id' => $this->getSearchIndexId($entity),
-        'source' => 'drupal',
-        'documentType' => $this->getDocumentType($entity),
-        'documentId' => $entity->id(),
-        'documentUrl' => $this->getUrl($entity),
-        'documentTitle' => $entity->getTitle(),
-        'documentContent' => $this->processContentBody($entity),
-        'metaTags' => $this->aiMetadataManager->getAiMetadata($entity)['ai_tags'],
-        'metaDescription' => $this->aiMetadataManager->getAiMetadata($entity)['ai_description'],
-        'dateCreated' => $this->formatTimestamp($entity->getCreatedTime()),
-        'dateModified' => $this->formatTimestamp($entity->getChangedTime()),
-        'dateProcessed' => $this->formatTimestamp(time()),
-      ];
+      /** @var \Drupal\Core\Entity\EntityInterface $entity */
+      $entityData[] = $this->generateEntityData($entity, $entityType);
     }
 
     $totalRecords = $this->countTotalRecords($params);
@@ -175,6 +179,23 @@ class Sources {
   }
 
   /**
+   * Use the Content Feed Plugin to generate entity data.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   A content entity.
+   * @param string $entityType
+   *   The entity type.
+   *
+   * @return array
+   *   An array of entity data.
+   */
+  public function generateEntityData($entity, $entityType) {
+    $plugin_id = $this->contentFeedManager->getPluginIdFromEntityType($entityType);
+    $plugin = $this->contentFeedManager->createInstance($plugin_id);
+    return $plugin->generateFeed($this, $entity);
+  }
+
+  /**
    * Query entities.
    *
    * @param array $params
@@ -186,12 +207,24 @@ class Sources {
    *   An array of node IDs for content entities filtered by query parameters.
    */
   protected function queryEntities(array $params, bool $pager = TRUE): array {
+    $entityType = $params['entityType'] ?? 'node';
+    $firstLetterEntityType = strtolower(substr($entityType, 0, 1));
+
+    $allowedEntities = ['node', 'media'];
+
     // Query all publically available nodes.
     $query = $this->entityTypeManager
-      ->getStorage('node')
+      ->getStorage($entityType)
       ->getQuery()
       ->condition('status', NodeInterface::PUBLISHED)
       ->accessCheck(TRUE);
+
+    // For media, make sure we only pull those they chose to include.
+    // This should probably be extracted and injected.
+    if ($entityType === 'media') {
+      $allowedBundles = $this->configFactory->get('ai_engine_embedding.settings')->get('included_media_types') ?? [''];
+      $query->condition('bundle', $allowedBundles, 'IN');
+    }
 
     // Optionally page results.
     if ($pager) {
@@ -201,15 +234,15 @@ class Sources {
     }
 
     // Optional filter by node ID. Useful for updating a single item.
-    if (!empty($params['entityType']) && $params['entityType'] == 'node' && !empty($params['id'])) {
-      $query->condition('nid', $params['id']);
+    if (!empty($params['entityType']) && in_array($params['entityType'], $allowedEntities) && !empty($params['id'])) {
+      $query->condition($firstLetterEntityType . 'id', $params['id']);
     }
 
     // Don't include nodes that are marked to be excluded in the AI metadata.
     $metatags_field = $this->configFactory->get(self::CONFIG_NAME)->get('metatags_field');
     if (!empty($metatags_field)) {
       $andCondition = $query->orConditionGroup()
-        ->condition($metatags_field, '%ai_disable_indexing%', 'NOT LIKE')
+        ->condition($metatags_field, '%ai_disable_indexing":"disabled%', 'NOT LIKE')
         ->condition($metatags_field, NULL, 'IS NULL');
       $query->condition($andCondition);
     }
@@ -254,7 +287,7 @@ class Sources {
    * @return string
    *   The formatted value of the date.
    */
-  protected function formatTimestamp(int $timestamp): string {
+  public function formatTimestamp(int $timestamp): string {
     $dateTime = DrupalDateTime::createFromTimestamp($timestamp);
     return $dateTime->format(\DateTime::ATOM);
   }
@@ -268,13 +301,14 @@ class Sources {
    * @return \Drupal\Component\Render\MarkupInterface
    *   The rendered HTML.
    */
-  protected function processContentBody(EntityInterface $entity) {
+  public function processContentBody(EntityInterface $entity) {
     try {
       $this->setRequestTitleToNodeId($entity);
       $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
       $renderArray = $view_builder->view($entity, 'default');
       $returnValue = $this->renderer->render($renderArray);
-    } catch(\TypeError $e) {
+    }
+    catch (\TypeError $e) {
       $returnValue = '';
     }
 
@@ -310,7 +344,7 @@ class Sources {
    * @return string
    *   A string representing the type of content.
    */
-  protected function getDocumentType(EntityInterface $entity): string {
+  public function getDocumentType(EntityInterface $entity): string {
     $type = $entity->getEntityTypeId();
     if (!empty($entity->bundle())) {
       $type .= '/' . $entity->bundle();
@@ -327,7 +361,7 @@ class Sources {
    * @return string
    *   The canonical URL as a string.
    */
-  protected function getUrl(EntityInterface $entity): string {
+  public function getUrl(EntityInterface $entity): string {
     return $entity->toUrl('canonical', ['absolute' => TRUE])->toString();
   }
 
@@ -352,6 +386,20 @@ class Sources {
       if ($route) {
         $route->setDefault('_title', $entity->id());
       }
+  }
+
+  /**
+   * Retrieves the meta tags for a content entity.
+   */
+  public function getMetaTags($entity): string {
+    return $this->aiMetadataManager->getAiMetadata($entity)['ai_tags'];
+  }
+
+  /**
+   * Retrieves the meta description for a content entity.
+   */
+  public function getMetaDescription($entity): string {
+    return $this->aiMetadataManager->getAiMetadata($entity)['ai_description'];
   }
 
 }

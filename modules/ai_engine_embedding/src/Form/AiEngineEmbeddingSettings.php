@@ -2,8 +2,11 @@
 
 namespace Drupal\ai_engine_embedding\Form;
 
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\ai_engine_embedding\Service\EntityUpdate;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Setting form for the AI Engine Embedding module.
@@ -18,6 +21,13 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
   const CONFIG_NAME = 'ai_engine_embedding.settings';
 
   /**
+   * Entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManager
+   */
+  protected $entityTypeManager;
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -29,6 +39,21 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
    */
   protected function getEditableConfigNames() {
     return [self::CONFIG_NAME];
+  }
+
+  public function __construct(
+    EntityTypeManagerInterface $entityTypeManager,
+  ) {
+    $this->entityTypeManager = $entityTypeManager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity_type.manager'),
+    );
   }
 
   /**
@@ -59,6 +84,25 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
       '#title' => $this->t('Azure Embedding Service Endpoint'),
       '#description' => $this->t('Ex: https://askyaleindexfunc.azurewebsites.net'),
       '#default_value' => $config->get('azure_embedding_service_url') ?? NULL,
+    ];
+    $form['azure_chunk_size'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Chunk Size'),
+      '#description' => $this->t('The chunk size to split each document into'),
+      '#default_value' => $config->get('azure_chunk_size') ?? 3000,
+    ];
+    $form['chunking_output_strategy'] = [
+      '#type' => 'select',
+      '#title' => $this->t("Chunking Output Strategy"),
+      '#options' => EntityUpdate::CHUNKING_OUTPUT_STRATEGY_OPTIONS,
+      '#description' => $this->t('The strategy to use for chunking documents.'),
+      '#default_value' => $config->get('chunking_output_strategy') ?? EntityUpdate::CHUNKING_STRATEGY_DEFAULT,
+    ];
+    $form['included_media_types'] = [
+      '#type' => 'checkboxes',
+      '#title' => $this->t('Included Media Types'),
+      '#options' => $this->getMediaTypes(),
+      '#default_value' => $config->get('included_media_types') ?? [],
     ];
     $form['actions'] = [
       '#type' => 'details',
@@ -93,11 +137,22 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    $azure_chunk_size = $form_state->getValue('azure_chunk_size') ?? EntityUpdate::CHUNK_SIZE_DEFAULT;
+
+    if (!is_numeric($azure_chunk_size) || $azure_chunk_size < 1) {
+      $azure_chunk_size = EntityUpdate::CHUNK_SIZE_DEFAULT;
+    }
+
+    $included_media_types = $form_state->getValue('included_media_types');
+
     $this->config(self::CONFIG_NAME)
       ->set('enable', $form_state->getValue('enable'))
       ->set('azure_search_service_name', $form_state->getValue('azure_search_service_name'))
       ->set('azure_search_service_index', $form_state->getValue('azure_search_service_index'))
       ->set('azure_embedding_service_url', $form_state->getValue('azure_embedding_service_url'))
+      ->set('azure_chunk_size', $azure_chunk_size)
+      ->set('included_media_types', $included_media_types)
+      ->set('chunking_output_strategy', $form_state->getValue('chunking_output_strategy'))
       ->save();
     parent::submitForm($form, $form_state);
   }
@@ -106,8 +161,80 @@ class AiEngineEmbeddingSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function actionUpsertAllDocuments(array &$form, FormStateInterface $form_state) {
+    $media_types = $form_state->getValue('included_media_types');
+
+    $default = 'disabled';
+    // For each media type selected, set the defaults for unset content.
+    foreach (array_keys($media_types) as $media_type) {
+      if (isset($media_types[$media_type]) && $media_types[$media_type] != 0) {
+        $this->setDeafultsForUnsetContent($media_type, $default);
+      }
+    }
+
     $service = \Drupal::service('ai_engine_embedding.entity_update');
     $service->addAllDocuments();
+  }
+
+  /**
+   * Retrieves the list of media types.
+   *
+   * @return array
+   *   An array of media type labels.
+   */
+  protected function getMediaTypes(): array {
+    $media_types = [];
+
+    foreach ($this->entityTypeManager->getStorage('media_type')->loadMultiple() as $media_type) {
+      $media_types[$media_type->id()] = $media_type->label();
+    }
+
+    asort($media_types);
+
+    return $media_types;
+  }
+
+  /**
+   * Sets the defaults for unset content.
+   *
+   * If a media type is selected, make sure each current item
+   * that doesn't have metadata set has it set to enabled or disabled.
+   *
+   * @param string $media_type
+   *   The media type to check.
+   * @param string $default
+   *   The default value to set if metadata is not set.
+   *
+   * @return void
+   *   No return value.
+   */
+  protected function setDeafultsForUnsetContent($media_type, $default) {
+    $mediaStorage = $this->entityTypeManager->getStorage('media');
+    // Get all media matching those types.
+    $media = $mediaStorage->loadByProperties([
+      'bundle' => [$media_type],
+    ]);
+
+    // Loop through each media item and check if it has metatags set.
+    foreach ($media as $item) {
+      // Check if the metatags is set.
+      $metatags = $item->get('field_metatags')->getValue();
+      if (empty($metatags)) {
+        $metatags = ['ai_disable_indexing' => $default];
+        $item->set('field_metatags', [
+          'value' => $metatags,
+        ]);
+        $mediaStorage->save($item);
+      }
+      else {
+        $metatags_array = json_decode($metatags[0]['value']);
+        if (empty($media_array->ai_disable_indexing)) {
+          $metatags_array->ai_disable_indexing = $default;
+          $metatags[0]['value'] = $metatags_array;
+          $item->set('field_metatags', $metatags);
+          $mediaStorage->save($item);
+        }
+      }
+    }
   }
 
 }
