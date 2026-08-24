@@ -303,6 +303,7 @@ class Sources {
    */
   public function processContentBody(EntityInterface $entity) {
     try {
+      $this->setRequestTitleToNodeId($entity);
       $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
       $renderArray = $view_builder->view($entity, 'default');
       $returnValue = $this->renderer->render($renderArray);
@@ -362,6 +363,29 @@ class Sources {
    */
   public function getUrl(EntityInterface $entity): string {
     return $entity->toUrl('canonical', ['absolute' => TRUE])->toString();
+  }
+
+  /**
+   * Set the request title to the node title.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to get the title from.
+   */
+  protected function setRequestTitleToNodeTitle(EntityInterface $entity): bool {
+    $request = $this->requestStack->getCurrentRequest();
+    $route_match = \Drupal::routeMatch();
+    $route = $route_match->getRouteObject();
+    if ($route) {
+      $route->setDefault('_title', $entity->getTitle());
+    }
+  }
+
+  protected function setRequestTitleToNodeId(EntityInterface $entity): void {
+      $request = $this->requestStack->getCurrentRequest();
+      $route = $this->routeMatch->getRouteObject();
+      if ($route) {
+        $route->setDefault('_title', $entity->id());
+      }
   }
 
   /**
